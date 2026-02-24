@@ -1,5 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 import { Construct } from 'constructs';
 
 export class AuthStack extends cdk.Stack {
@@ -8,6 +10,22 @@ export class AuthStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Post-confirmation Lambda trigger (creates profile on sign-up)
+    const postConfirmationFn = new lambda.Function(
+      this,
+      'PostConfirmation',
+      {
+        functionName: 'driftlab-post-confirmation',
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'postConfirmation.handler',
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, '../../../lambda/functions'),
+        ),
+        memorySize: 128,
+        timeout: cdk.Duration.seconds(10),
+      },
+    );
 
     // Cognito User Pool with email sign-up
     this.userPool = new cognito.UserPool(this, 'DriftLabUserPool', {
@@ -42,6 +60,9 @@ export class AuthStack extends cdk.Stack {
         otp: true,
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      lambdaTriggers: {
+        postConfirmation: postConfirmationFn,
+      },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 

@@ -73,6 +73,21 @@ function LabsIcon({ color, size }: { color: string; size: number }) {
   );
 }
 
+function ProfileIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth={1.5} opacity={0.8} />
+      <Path
+        d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        opacity={0.8}
+      />
+    </Svg>
+  );
+}
+
 export default function TabLayout() {
   return (
     <Tabs
@@ -118,6 +133,13 @@ export default function TabLayout() {
         options={{
           title: 'Labs',
           tabBarIcon: ({ color }) => <LabsIcon color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <ProfileIcon color={color} size={24} />,
         }}
       />
     </Tabs>

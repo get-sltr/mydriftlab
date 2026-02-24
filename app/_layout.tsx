@@ -27,11 +27,14 @@ import {
   LibreBaskerville_700Bold,
 } from '@expo-google-fonts/libre-baskerville';
 import * as SplashScreen from 'expo-splash-screen';
+import { useAuthStore } from '../stores/authStore';
 import { colors } from '../lib/colors';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const initialize = useAuthStore((s) => s.initialize);
+
   const [fontsLoaded] = useFonts({
     CormorantGaramond_300Light,
     CormorantGaramond_400Regular,
@@ -53,7 +56,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      // Initialize auth state, then hide splash
+      initialize().finally(() => {
+        SplashScreen.hideAsync();
+      });
     }
   }, [fontsLoaded]);
 
@@ -68,7 +74,11 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.deep },
           animation: 'fade',
         }}
-      />
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
     </>
   );
 }
