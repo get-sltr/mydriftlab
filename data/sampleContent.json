@@ -1,0 +1,127 @@
+[
+  {
+    "id": "story-001",
+    "type": "story",
+    "title": "Midnight Train to Kyoto",
+    "narrator": "Voice Actor 1",
+    "durationSeconds": 1500,
+    "category": "travel",
+    "isAdaptive": false,
+    "tags": ["train", "japan", "calm"],
+    "tier": "pro",
+    "audioUrl": ""
+  },
+  {
+    "id": "story-002",
+    "type": "story",
+    "title": "The Lighthouse Keeper",
+    "narrator": "Voice Actor 2",
+    "durationSeconds": 1200,
+    "category": "nature",
+    "isAdaptive": false,
+    "tags": ["ocean", "solitude", "fog"],
+    "tier": "pro",
+    "audioUrl": ""
+  },
+  {
+    "id": "sound-001",
+    "type": "soundscape",
+    "title": "Gentle Rain",
+    "durationSeconds": 0,
+    "category": "rain",
+    "isAdaptive": false,
+    "tags": ["rain", "drops", "calm"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "sound-002",
+    "type": "soundscape",
+    "title": "Pacific Shore",
+    "durationSeconds": 0,
+    "category": "ocean",
+    "isAdaptive": false,
+    "tags": ["ocean", "waves", "shore"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "sound-003",
+    "type": "soundscape",
+    "title": "Forest Night",
+    "durationSeconds": 0,
+    "category": "forest",
+    "isAdaptive": false,
+    "tags": ["forest", "crickets", "night"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "sound-004",
+    "type": "soundscape",
+    "title": "City Rain",
+    "durationSeconds": 0,
+    "category": "city_night",
+    "isAdaptive": false,
+    "tags": ["city", "rain", "ambient"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "sound-005",
+    "type": "soundscape",
+    "title": "Brown Noise",
+    "durationSeconds": 0,
+    "category": "white_noise",
+    "isAdaptive": false,
+    "tags": ["noise", "brown", "deep"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "sound-006",
+    "type": "soundscape",
+    "title": "White Noise",
+    "durationSeconds": 0,
+    "category": "white_noise",
+    "isAdaptive": false,
+    "tags": ["noise", "white", "static"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "med-001",
+    "type": "breathing",
+    "title": "4-7-8 Breathing",
+    "durationSeconds": 300,
+    "category": "breathing",
+    "isAdaptive": false,
+    "tags": ["breathing", "relaxation", "4-7-8"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "med-002",
+    "type": "meditation",
+    "title": "Body Scan",
+    "narrator": "Voice Actor 3",
+    "durationSeconds": 600,
+    "category": "meditation",
+    "isAdaptive": false,
+    "tags": ["body-scan", "guided", "relaxation"],
+    "tier": "free",
+    "audioUrl": ""
+  },
+  {
+    "id": "med-003",
+    "type": "meditation",
+    "title": "Sleep Meditation",
+    "narrator": "Voice Actor 3",
+    "durationSeconds": 900,
+    "category": "meditation",
+    "isAdaptive": false,
+    "tags": ["sleep", "guided", "deep"],
+    "tier": "pro",
+    "audioUrl": ""
+  }
+]

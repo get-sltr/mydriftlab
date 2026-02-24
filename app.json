@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "DriftLab",
+    "slug": "driftlab",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "driftlab",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0E14"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sltrdigital.driftlab",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "DriftLab uses the microphone to monitor your sleep environment and detect noise disruptions. Audio is processed on-device and never uploaded.",
+        "NSMotionUsageDescription": "DriftLab uses motion sensors to detect movement during sleep."
+      }
+    },
+    "android": {
+      "package": "com.sltrdigital.driftlab",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0E14"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "DriftLab uses the microphone to monitor your sleep environment and detect noise disruptions."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "DriftLab uses motion sensors to detect movement during sleep."
+        }
+      ]
+    ]
+  }
+}
