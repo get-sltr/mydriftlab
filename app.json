@@ -19,8 +19,13 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "DriftLab uses the microphone to monitor your sleep environment and detect noise disruptions. Audio is processed on-device and never uploaded.",
         "NSMotionUsageDescription": "DriftLab uses motion sensors to detect movement during sleep.",
-        "UIBackgroundModes": ["audio"]
-      }
+        "UIBackgroundModes": [
+          "audio",
+          "audio"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "4"
     },
     "android": {
       "package": "com.sltrdigital.driftlab",
@@ -30,7 +35,10 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.WRITE_SETTINGS"
       ]
     },
     "plugins": [
@@ -50,6 +58,13 @@
         }
       ],
       "expo-brightness"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1a93b479-7e3c-417a-936c-62011ee31aab"
+      }
+    },
+    "owner": "memoryaisle"
   }
 }
