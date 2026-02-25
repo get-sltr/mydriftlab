@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import FloatingParticles from '../../components/ui/FloatingParticles';
 import FilmGrain from '../../components/ui/FilmGrain';
 import GlowText from '../../components/ui/GlowText';
@@ -15,6 +16,7 @@ import { fonts, textStyles } from '../../lib/typography';
 import sampleContent from '../../data/sampleContent.json';
 
 export default function DriftScreen() {
+  const router = useRouter();
   const hour = new Date().getHours();
   const greeting =
     hour < 5
@@ -53,10 +55,20 @@ export default function DriftScreen() {
     [],
   );
 
-  const handleContentPress = useCallback((item: ContentItem) => {
-    // TODO: Navigate to content player (Step 4)
-    console.log('Content pressed:', item.title);
-  }, []);
+  const handleContentPress = useCallback(
+    (item: ContentItem) => {
+      router.push({
+        pathname: '/player',
+        params: {
+          title: item.title,
+          category: item.category,
+          duration: String(item.durationSeconds),
+          type: item.type,
+        },
+      });
+    },
+    [router],
+  );
 
   const handleStartWindDown = useCallback(() => {
     // TODO: Start wind-down + recording flow (Step 6)
