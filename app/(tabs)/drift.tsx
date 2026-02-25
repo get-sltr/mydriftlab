@@ -81,9 +81,8 @@ export default function DriftScreen() {
   );
 
   const handleStartWindDown = useCallback(() => {
-    // TODO: Start wind-down + recording flow (Step 6)
-    console.log('Start Wind Down + Monitoring');
-  }, []);
+    router.push('/(tabs)/record');
+  }, [router]);
 
   return (
     <View style={styles.container}>
