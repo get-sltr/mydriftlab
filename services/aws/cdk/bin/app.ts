@@ -4,6 +4,7 @@ import { AuthStack } from '../lib/stacks/auth-stack';
 import { DatabaseStack } from '../lib/stacks/database-stack';
 import { ApiStack } from '../lib/stacks/api-stack';
 import { StorageStack } from '../lib/stacks/storage-stack';
+import { WebsiteStack } from '../lib/stacks/website-stack';
 
 const app = new cdk.App();
 
@@ -17,6 +18,8 @@ const authStack = new AuthStack(app, 'DriftLab-Auth', { env });
 const databaseStack = new DatabaseStack(app, 'DriftLab-Database', { env });
 
 const storageStack = new StorageStack(app, 'DriftLab-Storage', { env });
+
+new WebsiteStack(app, 'DriftLab-Website', { env });
 
 new ApiStack(app, 'DriftLab-Api', {
   env,

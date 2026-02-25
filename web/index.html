@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DriftLab - From Lullaby to Lab Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --deep: #0B0E14;
+  --navy: #121827;
+  --surface: #1A2035;
+  --surface-light: #222942;
+  --lavender: #B8A0D2;
+  --lavender-light: #CDB8E6;
+  --lavender-dim: rgba(184,160,210,0.08);
+  --lavender-glow: rgba(184,160,210,0.15);
+  --rose: #D4858A;
+  --rose-light: #E09DA2;
+  --rose-glow: rgba(212,133,138,0.15);
+  --cream: #F0EBE0;
+  --cream-muted: rgba(240,235,224,0.6);
+  --cream-dim: rgba(240,235,224,0.3);
+  --cream-faint: rgba(240,235,224,0.08);
+  --border: rgba(240,235,224,0.06);
+  --noise: #D4604A;
+  --temp: #D4BA6A;
+  --light-ev: #7B8FD4;
+  --partner: #6BADA0;
+  --humidity: #6B9FD4;
+  --snore: #C47ED4;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--deep);
+  color: var(--cream);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.container { max-width: 1140px; margin: 0 auto; padding: 0 32px; }
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; width: 100%; z-index: 1000;
+  background: rgba(11,14,20,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1140px; margin: 0 auto; padding: 16px 32px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.nav-logo {
+  font-family: 'Libre Baskerville', serif; font-size: 1.2rem;
+  color: var(--cream); text-decoration: none; display: flex; align-items: center; gap: 8px;
+}
+.nav-logo b { color: var(--lavender); }
+.nav-logo i { font-weight: 400; }
+.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+.nav-links a {
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em;
+  color: var(--cream-muted); text-decoration: none; transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--cream); }
+
+/* BUTTONS */
+.btn-glass {
+  background: rgba(184,160,210,0.1); backdrop-filter: blur(12px);
+  color: var(--lavender); padding: 10px 24px;
+  font-family: 'Outfit', sans-serif; font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border: 1px solid rgba(184,160,210,0.2); border-radius: 4px;
+  cursor: pointer; transition: all 0.35s; text-decoration: none; display: inline-block;
+}
+.btn-glass:hover {
+  background: rgba(184,160,210,0.18); border-color: rgba(184,160,210,0.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.btn-glass-rose {
+  background: rgba(212,133,138,0.1); border-color: rgba(212,133,138,0.2); color: var(--rose);
+}
+.btn-glass-rose:hover {
+  background: rgba(212,133,138,0.18); border-color: rgba(212,133,138,0.4);
+}
+
+.glow { text-shadow: 0 0 20px var(--lavender-glow), 0 0 40px rgba(184,160,210,0.06); }
+
+/* PARTICLES */
+#particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+.particle {
+  position: absolute; border-radius: 50%;
+  animation: floatUp linear infinite;
+}
+@keyframes floatUp {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; } 90% { opacity: 1; }
+  100% { transform: translateY(-5vh) scale(1); opacity: 0; }
+}
+
+/* HERO */
+.hero {
+  min-height: 100vh; display: flex; align-items: center;
+  position: relative; padding: 120px 0 80px;
+}
+.hero-grid {
+  display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 60px; align-items: center;
+}
+.hero-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--lavender);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+  opacity: 0; animation: fadeUp 0.6s ease forwards 0.2s;
+}
+.hero-badge::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--rose); animation: pulse 2s ease infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+.hero-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.6rem, 4.5vw, 4.2rem); font-weight: 400;
+  line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 24px;
+  color: var(--lavender); opacity: 0; animation: fadeUp 0.7s ease forwards 0.35s;
+}
+.hero-headline em { font-style: italic; color: var(--rose); }
+.hero-sub {
+  font-size: 1rem; font-weight: 300; line-height: 1.75;
+  color: var(--cream-muted); max-width: 480px; margin-bottom: 36px;
+  opacity: 0; animation: fadeUp 0.7s ease forwards 0.5s;
+}
+.hero-btns {
+  display: flex; gap: 14px;
+  opacity: 0; animation: fadeUp 0.7s ease forwards 0.65s;
+}
+
+/* NIGHT TIMELINE */
+.night-timeline {
+  background: var(--navy); border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; position: relative;
+  opacity: 0; animation: fadeUp 0.8s ease forwards 0.5s;
+}
+.night-timeline::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 13px;
+  background: linear-gradient(135deg, var(--lavender), transparent 50%, var(--rose));
+  z-index: -1; opacity: 0.2;
+}
+.timeline-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+}
+.timeline-title {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim);
+}
+.timeline-date {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.5rem; color: var(--lavender);
+}
+.timeline-bar {
+  height: 6px; background: var(--surface); border-radius: 3px;
+  position: relative; margin-bottom: 20px;
+}
+.event-dot {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--navy);
+}
+.timeline-events { display: flex; flex-direction: column; gap: 5px; }
+.t-event {
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  background: rgba(240,235,224,0.02); border-radius: 6px; transition: background 0.3s;
+}
+.t-event:hover { background: rgba(240,235,224,0.04); }
+.t-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.t-label { font-size: 0.68rem; color: var(--cream-muted); flex: 1; }
+.t-time {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.5rem; color: var(--cream-dim);
+}
+.t-db {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.48rem; color: var(--cream-dim);
+  background: rgba(240,235,224,0.04); padding: 2px 6px; border-radius: 3px;
+}
+.timeline-insight {
+  margin-top: 14px; padding: 10px 12px;
+  border-left: 2px solid var(--lavender); background: var(--lavender-dim);
+  border-radius: 0 6px 6px 0;
+}
+.insight-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.42rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--lavender); margin-bottom: 4px;
+}
+.insight-text { font-size: 0.68rem; color: var(--cream-muted); line-height: 1.5; }
+
+/* SECTION STYLES */
+section { padding: 100px 0; border-top: 1px solid var(--border); }
+.section-eyebrow {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--rose); margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Cormorant Garamond', serif; font-size: 2.4rem;
+  font-weight: 400; color: var(--lavender); margin-bottom: 12px;
+}
+.section-sub {
+  font-size: 0.9rem; color: var(--cream-dim); max-width: 540px; line-height: 1.6; margin-bottom: 48px;
+}
+
+/* COMPARISON */
+.comp-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0;
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+}
+.comp-col { padding: 36px; }
+.comp-col.them { background: var(--navy); }
+.comp-col.cycle { background: rgba(184,160,210,0.03); border-left: 1px solid var(--border); }
+.comp-col.us { background: rgba(184,160,210,0.06); border-left: 1px solid var(--border); }
+.comp-col-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem;
+  letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 24px;
+}
+.comp-item {
+  font-size: 0.82rem; padding: 12px 0; border-bottom: 1px solid var(--border); line-height: 1.6;
+}
+.comp-item:last-child { border-bottom: none; }
+.check { color: var(--partner); margin-right: 6px; }
+.cross { color: var(--noise); opacity: 0.4; margin-right: 6px; }
+
+/* FEATURE GRID */
+.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feat-card {
+  background: var(--navy); border-radius: 10px; padding: 28px 24px;
+  position: relative; transition: transform 0.3s;
+}
+.feat-card::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--lavender), transparent 50%, var(--rose));
+  z-index: -1; opacity: 0.1; transition: opacity 0.4s;
+}
+.feat-card:hover::before { opacity: 0.4; }
+.feat-card:hover { transform: translateY(-2px); }
+.feat-icon { font-size: 1.3rem; margin-bottom: 12px; display: block; }
+.feat-name { font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+.feat-desc { font-size: 0.72rem; color: var(--cream-muted); line-height: 1.6; }
+
+/* HOW IT WORKS */
+.how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.step-card {
+  background: var(--navy); border-radius: 10px; padding: 28px 22px;
+  position: relative; transition: transform 0.3s;
+}
+.step-card::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--lavender), transparent 50%, var(--rose));
+  z-index: -1; opacity: 0.15; transition: opacity 0.4s;
+}
+.step-card:hover::before { opacity: 0.5; }
+.step-card:hover { transform: translateY(-3px); }
+.step-num {
+  font-family: 'Cormorant Garamond', serif; font-size: 2.8rem;
+  font-weight: 300; color: var(--lavender); opacity: 0.25; line-height: 1; margin-bottom: 12px;
+}
+.step-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 8px; }
+.step-desc { font-size: 0.72rem; color: var(--cream-muted); line-height: 1.6; }
+
+/* PRICING */
+.price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 700px; }
+.price-card {
+  background: var(--navy); border-radius: 10px; padding: 32px 28px;
+  position: relative; transition: transform 0.3s;
+}
+.price-card::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--lavender), transparent 50%, var(--rose));
+  z-index: -1; opacity: 0.1; transition: opacity 0.4s;
+}
+.price-card:hover::before { opacity: 0.4; }
+.price-card:hover { transform: translateY(-2px); }
+.price-card.featured::before { opacity: 0.35; }
+.price-tier {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--lavender); margin-bottom: 8px;
+}
+.price-amount {
+  font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; font-weight: 600; margin-bottom: 4px;
+}
+.price-amount span { font-size: 0.9rem; font-weight: 300; color: var(--cream-dim); }
+.price-desc {
+  font-size: 0.72rem; color: var(--cream-dim); margin-bottom: 20px; line-height: 1.5;
+}
+.price-features { list-style: none; margin-bottom: 24px; }
+.price-features li {
+  font-size: 0.72rem; color: var(--cream-muted); padding: 5px 0;
+  border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+}
+.price-features li::before {
+  content: ''; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--lavender); flex-shrink: 0;
+}
+
+/* CTA */
+.cta { text-align: center; }
+.cta-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 400; line-height: 1.1;
+  color: var(--lavender); max-width: 600px; margin: 0 auto 16px;
+}
+.cta-headline em { font-style: italic; color: var(--rose); }
+.cta-sub {
+  font-size: 0.9rem; color: var(--cream-dim); max-width: 440px;
+  margin: 0 auto 40px; line-height: 1.6;
+}
+.cta-btns { display: flex; gap: 14px; justify-content: center; }
+
+/* FOOTER */
+footer {
+  background: var(--deep); border-top: 1px solid var(--border); padding: 48px 0 32px;
+}
+.footer-inner { max-width: 1140px; margin: 0 auto; padding: 0 32px; }
+.footer-top {
+  display: flex; justify-content: space-between; align-items: start;
+  margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border);
+}
+.footer-brand { font-family: 'Libre Baskerville', serif; font-size: 1rem; }
+.footer-brand b { color: var(--lavender); }
+.footer-brand i { font-weight: 400; }
+.footer-brand-sub {
+  font-size: 0.65rem; color: var(--cream-dim); margin-top: 6px; max-width: 280px; line-height: 1.5;
+}
+.footer-links { display: flex; gap: 48px; }
+.footer-col-title {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.5rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 12px;
+}
+.footer-col a {
+  display: block; font-size: 0.72rem; color: var(--cream-muted);
+  text-decoration: none; margin-bottom: 8px; transition: color 0.2s;
+}
+.footer-col a:hover { color: var(--cream); }
+.footer-bottom {
+  display: flex; justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.5rem; color: var(--cream-dim);
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal {
+  opacity: 0; transform: translateY(24px); transition: all 0.6s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .how-grid, .feat-grid { grid-template-columns: 1fr; }
+  .comp-grid { grid-template-columns: 1fr; }
+  .comp-col.cycle, .comp-col.us { border-left: none; border-top: 1px solid var(--border); }
+  .price-grid { grid-template-columns: 1fr; }
+  .footer-top { flex-direction: column; gap: 24px; }
+  .footer-links { flex-direction: column; gap: 16px; }
+  .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+  .cta-btns { flex-direction: column; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo"><b>Drift</b><i>Lab</i></a>
+    <ul class="nav-links">
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#cta" class="btn-glass">Join Waitlist</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" style="border-top:none; padding-top:120px;">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-badge">Early Access Open</div>
+        <h1 class="hero-headline glow">From lullaby to <em>lab report.</em></h1>
+        <p class="hero-sub">DriftLab is the only sleep app that helps you fall asleep AND tells you what happened while you were out. Adaptive sounds, sleep stories, guided meditations. Then real-time monitoring of noise, temperature, humidity, and light. No wearable. Just your phone.</p>
+        <div class="hero-btns">
+          <a href="#cta" class="btn-glass">Get Early Access</a>
+          <a href="#how" class="btn-glass btn-glass-rose">See How It Works</a>
+        </div>
+      </div>
+
+      <div class="night-timeline">
+        <div class="timeline-header">
+          <span class="timeline-title">Last Night's Report</span>
+          <span class="timeline-date">Feb 23, 2026</span>
+        </div>
+        <div class="timeline-bar">
+          <div class="event-dot" style="left:12%; background:var(--temp);"></div>
+          <div class="event-dot" style="left:28%; background:var(--snore);"></div>
+          <div class="event-dot" style="left:40%; background:var(--noise);"></div>
+          <div class="event-dot" style="left:55%; background:var(--humidity);"></div>
+          <div class="event-dot" style="left:65%; background:var(--light-ev);"></div>
+          <div class="event-dot" style="left:78%; background:var(--partner);"></div>
+        </div>
+        <div class="timeline-events">
+          <div class="t-event">
+            <div class="t-dot" style="background:var(--temp)"></div>
+            <span class="t-label">Temp spike: 71F to 76F</span>
+            <span class="t-db">+5F</span>
+            <span class="t-time">12:45a</span>
+          </div>
+          <div class="t-event">
+            <div class="t-dot" style="background:var(--snore)"></div>
+            <span class="t-label">Partner snoring: 12 min</span>
+            <span class="t-db">54dB</span>
+            <span class="t-time">1:30a</span>
+          </div>
+          <div class="t-event">
+            <div class="t-dot" style="background:var(--noise)"></div>
+            <span class="t-label">Noise: Vehicle outside</span>
+            <span class="t-db">78dB</span>
+            <span class="t-time">2:17a</span>
+          </div>
+          <div class="t-event">
+            <div class="t-dot" style="background:var(--humidity)"></div>
+            <span class="t-label">Humidity dropped to 28%</span>
+            <span class="t-db">-14%</span>
+            <span class="t-time">3:10a</span>
+          </div>
+          <div class="t-event">
+            <div class="t-dot" style="background:var(--light-ev)"></div>
+            <span class="t-label">Light: Bathroom trip</span>
+            <span class="t-db">45 lux</span>
+            <span class="t-time">3:42a</span>
+          </div>
+          <div class="t-event">
+            <div class="t-dot" style="background:var(--partner)"></div>
+            <span class="t-label">Partner movement detected</span>
+            <span class="t-db"></span>
+            <span class="t-time">4:03a</span>
+          </div>
+        </div>
+        <div class="timeline-insight">
+          <div class="insight-label">DriftLab Insight</div>
+          <div class="insight-text">6th Tuesday with a 2am truck disruption. Your humidity also dropped below 30% again. Try closing the window, running a fan, and adding a humidifier.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section id="compare">
+  <div class="container">
+    <div class="reveal" style="text-align:center; margin-bottom:48px;">
+      <div class="section-eyebrow">The Difference</div>
+      <h2 class="section-title glow">One app. Everything they do. Plus everything they can't.</h2>
+    </div>
+    <div class="comp-grid reveal">
+      <div class="comp-col them">
+        <div class="comp-col-label" style="color:var(--cream-dim)">Calm / Headspace</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="check">&#10003;</span> Sleep stories & sounds</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="check">&#10003;</span> Guided meditations</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="check">&#10003;</span> Breathing exercises</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No noise monitoring</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No environment tracking</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No morning report</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No pattern detection</div>
+      </div>
+      <div class="comp-col cycle">
+        <div class="comp-col-label" style="color:var(--cream-dim)">Sleep Cycle</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="check">&#10003;</span> Snoring detection</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="check">&#10003;</span> Sleep stage tracking</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="check">&#10003;</span> Smart alarm</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No environment noise ID</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No temp / humidity</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No adaptive sounds</div>
+        <div class="comp-item" style="color:var(--cream-dim)"><span class="cross">&#10005;</span> No experiments</div>
+      </div>
+      <div class="comp-col us">
+        <div class="comp-col-label" style="color:var(--lavender)">DriftLab</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Sleep stories, sounds & meditation</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Snoring & sleep talk detection</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Environment noise classification</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Temp, humidity & light tracking</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Adaptive sounds (auto-adjust)</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Pattern detection across weeks</div>
+        <div class="comp-item" style="color:var(--cream-muted)"><span class="check">&#10003;</span> Sleep experiments engine</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-eyebrow">How It Works</div>
+      <h2 class="section-title glow">Wind down. Drift off. Wake up smarter.</h2>
+      <p class="section-sub">Four seamless steps. One app handles everything from your bedtime routine to your morning intelligence report.</p>
+    </div>
+    <div class="how-grid">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <div class="step-title">Wind Down</div>
+        <div class="step-desc">Choose a sleep story, meditation, or soundscape. DriftLab builds your personalized wind-down routine based on what's worked for you before.</div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">02</div>
+        <div class="step-title">Smart Fade</div>
+        <div class="step-desc">Once you drift off, DriftLab detects the transition and silently switches from audio content to monitoring mode. No interruption. No manual stop.</div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">03</div>
+        <div class="step-title">Monitor All Night</div>
+        <div class="step-desc">On-device AI classifies every sound, tracks temperature, humidity, and light changes. Adaptive sounds adjust volume if noise spikes. All processing on your phone.</div>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">04</div>
+        <div class="step-title">Morning Report</div>
+        <div class="step-desc">Wake up to a full breakdown: what disrupted you, when, how loud, and what to do about it. Patterns detected. Experiments suggested. Answers, not just numbers.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES: CONTENT -->
+<section id="features">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-eyebrow">Fall Asleep</div>
+      <h2 class="section-title glow">Better than a lullaby</h2>
+      <p class="section-sub">Everything Calm and Headspace offer. Plus adaptive intelligence that makes it personal.</p>
+    </div>
+    <div class="feat-grid" style="margin-bottom: 80px;">
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128214;</span>
+        <div class="feat-name">Sleep Stories</div>
+        <div class="feat-desc">Original stories voiced by real narrators. Travel, nature, fantasy, and intentionally boring. Learns your preferences from completion rates and sleep scores.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#127926;</span>
+        <div class="feat-name">Adaptive Soundscapes</div>
+        <div class="feat-desc">Rain, ocean, brown noise, city night. DriftLab calibrates volume to YOUR room's baseline and auto-adjusts if noise spikes. Sounds that actually respond to your environment.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128716;</span>
+        <div class="feat-name">Guided Meditations</div>
+        <div class="feat-desc">Body scans, breathing guides, wind-down routines. Personalized based on your stress signals and what's actually helped you fall asleep faster.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#127911;</span>
+        <div class="feat-name">Music Library</div>
+        <div class="feat-desc">Ambient, lo-fi, classical. Curated from independent producers. Playlists that learn your taste and adapt to time of night.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#127744;</span>
+        <div class="feat-name">Breathing Exercises</div>
+        <div class="feat-desc">4-7-8, box breathing, coherent breathing. Visual and haptic guidance. Track which techniques correlate with your best sleep scores.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128161;</span>
+        <div class="feat-name">Smart Fade</div>
+        <div class="feat-desc">DriftLab detects when you've fallen asleep and silently transitions from content to monitoring. No manual stop. No interruption. Seamless.</div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <div class="section-eyebrow">Stay Informed</div>
+      <h2 class="section-title glow">The lab report</h2>
+      <p class="section-sub">Everything happening in your bedroom while you sleep. Body sounds, environmental disruptions, air quality. All classified, timestamped, and decoded.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#127897;</span>
+        <div class="feat-name">Noise Classification</div>
+        <div class="feat-desc">On-device ML identifies specific sounds: traffic, dogs, sirens, HVAC, construction, neighbors. Each event logged with decibel level and exact timestamp.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128564;</span>
+        <div class="feat-name">Snoring & Sleep Talk</div>
+        <div class="feat-desc">Detects snoring, coughing, sleep talking, and breathing patterns. Distinguishes between you and your partner. Tracks duration and intensity.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#127777;</span>
+        <div class="feat-name">Temperature Tracking</div>
+        <div class="feat-desc">Ambient temperature monitored all night. Detects spikes from heating, cooling failures, or seasonal changes that fragment your sleep.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128167;</span>
+        <div class="feat-name">Humidity Monitoring</div>
+        <div class="feat-desc">Tracks humidity levels throughout the night. Alerts when you drop below 30% or spike above 60%. Correlates dry air with congestion and wake events.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128262;</span>
+        <div class="feat-name">Light Detection</div>
+        <div class="feat-desc">Captures light intrusions from streetlights, devices, bathroom trips, and sunrise. Maps every light event to your disruption timeline.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128200;</span>
+        <div class="feat-name">Pattern Detection</div>
+        <div class="feat-desc">Weeks of data reveal recurring disruptions: Tuesday truck routes, weekend neighbors, seasonal temp shifts, humidity cycles. See patterns you'd never notice alone.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128300;</span>
+        <div class="feat-name">Sleep Experiments</div>
+        <div class="feat-desc">DriftLab suggests changes and tracks results. "Try earplugs tonight." "Set thermostat to 67F." "Add a humidifier." Measurable before-and-after data.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#129504;</span>
+        <div class="feat-name">AI Sleep Coach</div>
+        <div class="feat-desc">Personalized coaching based on YOUR data. Not generic tips. Real recommendations from your patterns, experiments, and environment history.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">&#128274;</span>
+        <div class="feat-name">Privacy Sacred</div>
+        <div class="feat-desc">All audio processing on-device. Raw audio never leaves your phone. Only event metadata stored. No cloud audio. We can't hear you. Period.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container">
+    <div class="reveal" style="text-align:center; margin-bottom:48px;">
+      <h2 class="section-title glow">Simple pricing</h2>
+      <p class="section-sub" style="margin:0 auto;">Start free. Upgrade when you're hooked.</p>
+    </div>
+    <div class="price-grid reveal" style="margin:0 auto;">
+      <div class="price-card">
+        <div class="price-tier">Free</div>
+        <div class="price-amount">$0</div>
+        <div class="price-desc">Start falling asleep smarter tonight.</div>
+        <ul class="price-features">
+          <li>Basic soundscapes & breathing</li>
+          <li>Nightly recording & morning report</li>
+          <li>Basic noise classification</li>
+          <li>Snoring detection</li>
+          <li>7-day history</li>
+        </ul>
+        <a href="#cta" class="btn-glass" style="display:block; text-align:center;">Get Started</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tier" style="color:var(--rose)">Pro</div>
+        <div class="price-amount">$4.99<span>/mo</span></div>
+        <div class="price-desc">The full lullaby-to-lab-report experience.</div>
+        <ul class="price-features">
+          <li>Everything in Free</li>
+          <li>Full story, meditation & music library</li>
+          <li>Adaptive soundscapes</li>
+          <li>Smart fade technology</li>
+          <li>Advanced noise classification</li>
+          <li>Temperature, humidity & light tracking</li>
+          <li>Unlimited history & pattern detection</li>
+          <li>Sleep experiments engine</li>
+          <li>AI sleep coaching</li>
+        </ul>
+        <a href="#cta" class="btn-glass btn-glass-rose" style="display:block; text-align:center;">Join Pro Waitlist</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="cta">
+  <div class="container">
+    <h2 class="cta-headline glow reveal">From lullaby to <em>lab report.</em></h2>
+    <p class="cta-sub reveal">The only sleep app that helps you drift off and tells you everything that happened while you were out. Launching soon.</p>
+    <div class="cta-btns reveal">
+      <a href="#" class="btn-glass">Get Early Access</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand"><b>Drift</b><i>Lab</i></div>
+        <div class="footer-brand-sub">From lullaby to lab report. The complete sleep app by SLTR Digital LLC. No wearable required.</div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <div class="footer-col-title">Product</div>
+          <a href="#how">How It Works</a>
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Company</div>
+          <a href="#">About</a>
+          <a href="#">Blog</a>
+          <a href="#">Contact</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Legal</div>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 SLTR Digital LLC. All rights reserved.</span>
+      <span>mydriftlab.com</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const pc = document.getElementById('particles');
+for (let i = 0; i < 25; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.background = Math.random() > 0.5 ? '#B8A0D2' : '#D4858A';
+  p.style.opacity = Math.random() * 0.3 + 0.05;
+  const s = (Math.random() * 3 + 1) + 'px';
+  p.style.width = s; p.style.height = s;
+  p.style.animationDuration = (Math.random() * 6 + 5) + 's';
+  p.style.animationDelay = (Math.random() * 6) + 's';
+  pc.appendChild(p);
+}
+const reveals = document.querySelectorAll('.reveal');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+reveals.forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>
