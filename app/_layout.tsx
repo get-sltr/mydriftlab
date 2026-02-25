@@ -85,6 +85,13 @@ export default function RootLayout() {
             presentation: 'fullScreenModal',
           }}
         />
+        <Stack.Screen
+          name="breathing"
+          options={{
+            animation: 'fade',
+            presentation: 'fullScreenModal',
+          }}
+        />
       </Stack>
     </>
   );

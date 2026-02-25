@@ -5,6 +5,7 @@ import ForestEnvironment from './ForestEnvironment';
 import CityNightEnvironment from './CityNightEnvironment';
 import WhiteNoiseEnvironment from './WhiteNoiseEnvironment';
 import SleepStoryEnvironment from './SleepStoryEnvironment';
+import CosmosEnvironment from './CosmosEnvironment';
 import FloatingParticles from '../ui/FloatingParticles';
 
 interface EnvironmentRendererProps {
@@ -30,6 +31,9 @@ export default function EnvironmentRenderer({
       return <WhiteNoiseEnvironment />;
     case 'sleep_story':
       return <SleepStoryEnvironment />;
+    case 'breathing':
+    case 'meditation':
+      return <CosmosEnvironment />;
     case 'default':
     default:
       return <FloatingParticles count={20} colorScheme="default" />;
@@ -46,8 +50,8 @@ export function categoryToEnvironment(category: string): VisualEnvironment {
     white_noise: 'white_noise',
     travel: 'sleep_story',
     nature: 'sleep_story',
-    meditation: 'default',
-    breathing: 'default',
+    meditation: 'meditation',
+    breathing: 'breathing',
   };
   return map[category] ?? 'default';
 }

@@ -57,15 +57,25 @@ export default function DriftScreen() {
 
   const handleContentPress = useCallback(
     (item: ContentItem) => {
-      router.push({
-        pathname: '/player',
-        params: {
-          title: item.title,
-          category: item.category,
-          duration: String(item.durationSeconds),
-          type: item.type,
-        },
-      });
+      if (item.type === 'breathing') {
+        router.push({
+          pathname: '/breathing',
+          params: {
+            title: item.title,
+            category: item.category,
+          },
+        });
+      } else {
+        router.push({
+          pathname: '/player',
+          params: {
+            title: item.title,
+            category: item.category,
+            duration: String(item.durationSeconds),
+            type: item.type,
+          },
+        });
+      }
     },
     [router],
   );
