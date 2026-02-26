@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0E14"
+      "backgroundColor": "#B5BCDA"
     },
     "ios": {
       "supportsTablet": false,
@@ -24,7 +24,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.sltrdigital.driftlab",
