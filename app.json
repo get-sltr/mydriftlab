@@ -25,7 +25,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "12",
+      "buildNumber": "13",
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": [
@@ -64,6 +64,7 @@
         }
       ],
       "expo-brightness",
+      "react-native-iap",
       "@react-native-community/datetimepicker",
       [
         "@kingstinct/react-native-healthkit",
