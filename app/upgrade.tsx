@@ -87,7 +87,7 @@ export default function UpgradeScreen() {
     }
   }, [tier]);
 
-  const priceLabel = product ? `${product.displayPrice}/month` : '$4.99/month';
+  const priceLabel = product ? `${(product as any).localizedPrice ?? '$4.99'}/month` : '$4.99/month';
 
   return (
     <View style={styles.container}>

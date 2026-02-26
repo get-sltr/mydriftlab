@@ -1,5 +1,5 @@
 /**
- * Subscription store — direct StoreKit integration via react-native-iap v14.
+ * Subscription store — direct StoreKit integration via react-native-iap.
  * Manages purchase state and syncs tier with authStore.
  */
 
@@ -7,16 +7,14 @@ import { create } from 'zustand';
 import {
   initConnection,
   endConnection,
-  fetchProducts,
-  requestPurchase,
+  getSubscriptions,
+  requestSubscription,
   getAvailablePurchases,
   finishTransaction,
   purchaseUpdatedListener,
   purchaseErrorListener,
-  ErrorCode,
-  type ProductOrSubscription,
+  type Subscription,
   type Purchase,
-  type EventSubscription,
 } from 'react-native-iap';
 import { useAuthStore } from './authStore';
 
@@ -25,7 +23,7 @@ const PRODUCT_ID = 'pro_monthly';
 interface SubscriptionState {
   isReady: boolean;
   isLoading: boolean;
-  product: ProductOrSubscription | null;
+  product: Subscription | null;
   error: string | null;
 
   init: () => Promise<void>;
@@ -34,8 +32,8 @@ interface SubscriptionState {
   teardown: () => void;
 }
 
-let purchaseUpdateSub: EventSubscription | null = null;
-let purchaseErrorSub: EventSubscription | null = null;
+let purchaseUpdateSub: { remove(): void } | null = null;
+let purchaseErrorSub: { remove(): void } | null = null;
 
 function syncTier(isPro: boolean) {
   useAuthStore.getState().setTier(isPro ? 'pro' : 'free');
@@ -62,7 +60,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
       // Listen for purchase errors
       purchaseErrorSub = purchaseErrorListener((error) => {
-        if (error.code !== ErrorCode.UserCancelled) {
+        if (error.code !== 'E_USER_CANCELLED') {
           set({ error: error.message, isLoading: false });
         } else {
           set({ isLoading: false });
@@ -70,8 +68,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       });
 
       // Fetch subscription product info
-      const products = await fetchProducts({ skus: [PRODUCT_ID], type: 'subs' });
-      const product = products?.find((p) => p.id === PRODUCT_ID) ?? null;
+      const subscriptions = await getSubscriptions({ skus: [PRODUCT_ID] });
+      const product = subscriptions?.find((p) => p.productId === PRODUCT_ID) ?? null;
 
       // Check for existing active subscription
       const purchases = await getAvailablePurchases();
@@ -96,10 +94,10 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
     try {
       set({ isLoading: true, error: null });
-      await requestPurchase({ request: { apple: { sku: PRODUCT_ID } }, type: 'subs' });
+      await requestSubscription({ sku: PRODUCT_ID });
       // Completion handled by purchaseUpdatedListener
     } catch (err: any) {
-      if (err.code !== ErrorCode.UserCancelled) {
+      if (err.code !== 'E_USER_CANCELLED') {
         set({ error: err.message ?? 'Purchase failed', isLoading: false });
       } else {
         set({ isLoading: false });
