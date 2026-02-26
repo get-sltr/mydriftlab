@@ -1,5 +1,5 @@
 /**
- * DriftLab Core Data Types
+ * MyDriftLAB Core Data Types
  */
 
 export interface SleepSession {

@@ -142,13 +142,13 @@ export default function ReportScreen() {
           <View style={styles.summaryCard}>
             <Text style={styles.summaryText}>
               Start your first night of monitoring to see your morning report here.
-              DriftLab will analyze your sleep environment and give you a detailed
+              MyDriftLAB will analyze your sleep environment and give you a detailed
               breakdown of what happened overnight.
             </Text>
           </View>
 
           <View style={styles.insightCard}>
-            <Text style={styles.insightLabel}>DriftLab Insight</Text>
+            <Text style={styles.insightLabel}>MyDriftLAB Insight</Text>
             <Text style={styles.insightText}>
               Your personalized sleep insights will appear here after your first
               recorded night.
@@ -233,7 +233,7 @@ export default function ReportScreen() {
         {insights.map((insight) => (
           <View key={insight.id} style={styles.insightCard}>
             <Text style={styles.insightLabel}>
-              {insight.type === 'encouragement' ? 'Encouragement' : 'DriftLab Insight'}
+              {insight.type === 'encouragement' ? 'Encouragement' : 'MyDriftLAB Insight'}
             </Text>
             <Text style={styles.insightTitle}>{insight.title}</Text>
             <Text style={styles.insightText}>{insight.body}</Text>

@@ -1,5 +1,5 @@
 /**
- * DriftLab Color Palette
+ * MyDriftLAB Color Palette
  * Brand identity: deep night sky with lavender + dusty rose accents
  */
 

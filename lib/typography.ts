@@ -1,5 +1,5 @@
 /**
- * DriftLab Typography System
+ * MyDriftLAB Typography System
  * Headlines: Cormorant Garamond
  * Body: Outfit
  * Data/Mono: IBM Plex Mono

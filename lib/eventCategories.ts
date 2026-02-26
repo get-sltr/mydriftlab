@@ -1,5 +1,5 @@
 /**
- * Event category definitions for DriftLab
+ * Event category definitions for MyDriftLAB
  * Maps event categories to display properties
  */
 

@@ -1,5 +1,5 @@
 /**
- * Content playback manager for DriftLab.
+ * Content playback manager for MyDriftLAB.
  *
  * Smart Fade — breathing-aware volume fadeout:
  * BreathingMonitor detects when the user's breathing slows and

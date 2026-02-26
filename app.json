@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DriftLab",
+    "name": "MyDriftLAB",
     "slug": "driftlab",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,14 +17,14 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.sltrdigital.driftlab",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "DriftLab uses the microphone to monitor your sleep environment and detect noise disruptions. Audio is processed on-device and never uploaded.",
-        "NSMotionUsageDescription": "DriftLab uses motion sensors to detect movement during sleep.",
+        "NSMicrophoneUsageDescription": "MyDriftLAB uses the microphone to monitor your sleep environment and detect noise disruptions. Audio is processed on-device and never uploaded.",
+        "NSMotionUsageDescription": "MyDriftLAB uses motion sensors to detect movement during sleep.",
         "UIBackgroundModes": [
           "audio"
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "6"
+      "buildNumber": "7"
     },
     "android": {
       "package": "com.sltrdigital.driftlab",
@@ -47,13 +47,13 @@
       [
         "expo-av",
         {
-          "microphonePermission": "DriftLab uses the microphone to monitor your sleep environment and detect noise disruptions."
+          "microphonePermission": "MyDriftLAB uses the microphone to monitor your sleep environment and detect noise disruptions."
         }
       ],
       [
         "expo-sensors",
         {
-          "motionPermission": "DriftLab uses motion sensors to detect movement during sleep."
+          "motionPermission": "MyDriftLAB uses motion sensors to detect movement during sleep."
         }
       ],
       "expo-brightness"

@@ -52,7 +52,7 @@ export default function ProfileScreen() {
         {/* Account info */}
         <GradientBorderCard style={styles.card}>
           <Text style={styles.cardLabel}>Account</Text>
-          <Text style={styles.nameText}>{name ?? 'DriftLab User'}</Text>
+          <Text style={styles.nameText}>{name ?? 'MyDriftLAB User'}</Text>
           <Text style={styles.emailText}>{email ?? ''}</Text>
           <View style={styles.tierBadge}>
             <Text style={styles.tierText}>FREE</Text>
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
         />
 
         {/* Version */}
-        <Text style={styles.version}>DriftLab v1.0.0</Text>
+        <Text style={styles.version}>MyDriftLAB v1.0.0</Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>
