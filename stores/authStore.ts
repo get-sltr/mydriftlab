@@ -38,6 +38,7 @@ interface AuthState {
   resendCode: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  setTier: (tier: 'free' | 'pro') => Promise<void>;
   clearError: () => void;
 }
 
@@ -145,10 +146,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       await SecureStore.setItemAsync(STORE_KEY_EMAIL, email);
 
+      // Restore name from SecureStore (set during signUp) or from token
+      const storedName = await SecureStore.getItemAsync(STORE_KEY_NAME);
+      const storedTier = await SecureStore.getItemAsync(STORE_KEY_TIER);
+      const tier = (storedTier === 'pro' ? 'pro' : 'free') as 'free' | 'pro';
+
       set({
         isAuthenticated: true,
         userId: getUserSub(session),
         email,
+        name: storedName ?? get().name,
+        tier,
         accessToken: getAccessToken(session),
         idToken: getIdToken(session),
         isLoading: false,
@@ -172,6 +180,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     await SecureStore.deleteItemAsync(STORE_KEY_EMAIL);
     await SecureStore.deleteItemAsync(STORE_KEY_NAME);
+    await SecureStore.deleteItemAsync(STORE_KEY_TIER);
 
     set({
       isAuthenticated: false,
@@ -184,6 +193,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       pendingEmail: null,
       error: null,
     });
+  },
+
+  setTier: async (tier: 'free' | 'pro') => {
+    set({ tier });
+    await SecureStore.setItemAsync(STORE_KEY_TIER, tier);
   },
 
   clearError: () => set({ error: null }),

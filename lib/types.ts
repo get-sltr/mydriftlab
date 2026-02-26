@@ -131,6 +131,219 @@ export type VisualEnvironment =
   | 'meditation'
   | 'default';
 
+// ── Weekly Report types ──────────────────────────────────────
+
+export interface WeeklyReport {
+  weekStart: string;
+  weekEnd: string;
+  avgScore: number;
+  prevWeekAvgScore: number | null;
+  dailyBreakdowns: DailyBreakdown[];
+  patterns: PatternInsight[];
+  topRecommendation: string;
+}
+
+export interface DailyBreakdown {
+  date: string;
+  dayLabel: string;
+  score: number | null;
+  explanation: string;
+  topDisruptor: string | null;
+}
+
+export interface PatternInsight {
+  title: string;
+  body: string;
+  category: 'noise' | 'climate' | 'light' | 'partner' | 'general';
+  impact: 'positive' | 'negative' | 'neutral';
+}
+
+// ── BreathTrend types ────────────────────────────────────────
+
+export type BreathingPhase = 'quiet' | 'active' | 'disturbed';
+
+export interface BreathingSnapshot {
+  timestamp: string;
+  breathingRate: number;
+  regularity: number;
+  avgAmplitude: number;
+  disturbanceDetected: boolean;
+}
+
+export interface BreathTrendSummary {
+  avgBreathingRate: number;
+  minBreathingRate: number;
+  maxBreathingRate: number;
+  avgRegularity: number;
+  disturbanceCount: number;
+  disturbanceMinutes: number;
+  bdi: number;
+  bdiSeverity: 'normal' | 'mild' | 'moderate' | 'severe';
+  recordingHours: number;
+  phases: { phase: BreathingPhase; startTime: string; endTime: string }[];
+  snapshots: BreathingSnapshot[];
+}
+
+// ── Sonar types ──────────────────────────────────────────────
+
+export type MovementLevel = 'still' | 'minor' | 'major' | 'absent';
+export type SonarSleepState = 'awake' | 'light' | 'deep';
+
+export interface SonarState {
+  breathingRate: number;
+  movementLevel: MovementLevel;
+  sleepState: SonarSleepState;
+  lastMovementAt: string | null;
+}
+
+export interface MovementSample {
+  timestamp: string;
+  movementLevel: MovementLevel;
+  sleepState: SonarSleepState;
+}
+
+export interface SleepEfficiencyData {
+  totalTimeInBedMinutes: number;
+  totalSleepMinutes: number;
+  sleepOnsetLatencyMinutes: number;
+  wakeAfterSleepOnsetMinutes: number;
+  sleepEfficiency: number;
+  movementTimeline: MovementSample[];
+}
+
+// ── CBT-I types ──────────────────────────────────────────────
+
+export interface CBTIProgram {
+  id: string;
+  userId: string;
+  status: 'active' | 'completed' | 'paused' | 'abandoned';
+  startedAt: string;
+  currentWeek: number;
+  baselineSleepEfficiency: number;
+  currentSleepEfficiency: number;
+  prescribedBedtime: string;
+  prescribedWakeTime: string;
+  timeInBedMinutes: number;
+  sleepDiary: SleepDiaryEntry[];
+}
+
+export interface CBTIWeek {
+  week: number;
+  focus: string;
+  keyAction: string;
+}
+
+export interface SleepDiaryEntry {
+  date: string;
+  sessionId: string | null;
+  bedtime: string;
+  lightsOff: string;
+  sleepOnsetMinutes: number;
+  awakenings: number;
+  wakeMinutes: number;
+  finalWake: string;
+  outOfBed: string;
+  sleepQuality: 1 | 2 | 3 | 4 | 5;
+  notes: string;
+  timeInBed: number;
+  totalSleepTime: number;
+  efficiency: number;
+  sonarEfficiency: number | null;
+  sonarSleepMinutes: number | null;
+}
+
+// ── Remedy types ─────────────────────────────────────────────
+
+export type RemedyCategory =
+  | 'positional'
+  | 'environmental'
+  | 'behavioral'
+  | 'device'
+  | 'dietary'
+  | 'exercise';
+
+export type EvidenceLevel = 'strong' | 'moderate' | 'emerging';
+
+export interface MatchRule {
+  metric: string;
+  condition: 'gt' | 'lt' | 'gte' | 'lte' | 'eq';
+  value: number;
+}
+
+export interface Remedy {
+  id: string;
+  name: string;
+  category: RemedyCategory;
+  description: string;
+  howTo: string;
+  evidenceLevel: EvidenceLevel;
+  source: string;
+  targetMetrics: string[];
+  matchRules: MatchRule[];
+  experimentDuration: number;
+  disclaimer: string | null;
+}
+
+export interface RemedySuggestion {
+  remedy: Remedy;
+  priority: number;
+  reason: string;
+}
+
+// ── Experiment types ─────────────────────────────────────────
+
+export type ExperimentAdherence = 'full' | 'partial' | 'skipped';
+
+export interface ExperimentLog {
+  date: string;
+  adherence: ExperimentAdherence;
+  notes: string;
+  restScore: number | null;
+  bdi: number | null;
+  sleepEfficiency: number | null;
+}
+
+export interface ExperimentResults {
+  baselineAvgScore: number;
+  experimentAvgScore: number;
+  baselineAvgBdi: number | null;
+  experimentAvgBdi: number | null;
+  baselineAvgEfficiency: number | null;
+  experimentAvgEfficiency: number | null;
+  verdict: 'improved' | 'no_change' | 'worsened';
+  improvementPct: number;
+}
+
+// ── Apple Health types ───────────────────────────────────────
+
+export interface AppleHealthSleepData {
+  sleepStages: {
+    awake: number;
+    rem: number;
+    core: number;
+    deep: number;
+  };
+  totalSleepMinutes: number;
+  hrv: number | null;
+  respiratoryRate: number | null;
+  spo2: number | null;
+  heartRate: { avg: number; min: number; max: number } | null;
+}
+
+// ── CBT-I content types ─────────────────────────────────────
+
+export type CBTILessonType = 'education' | 'exercise' | 'reflection';
+
+export interface CBTILesson {
+  id: string;
+  week: number;
+  title: string;
+  body: string;
+  audioId: string | null;
+  estimatedMinutes: number;
+  type: CBTILessonType;
+}
+
 /** Event severity with display info */
 export interface SeverityInfo {
   label: string;

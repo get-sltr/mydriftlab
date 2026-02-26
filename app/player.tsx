@@ -18,12 +18,18 @@ import EnvironmentRenderer, {
   categoryToEnvironment,
 } from '../components/environments/EnvironmentRenderer';
 import FilmGrain from '../components/ui/FilmGrain';
+import AmbientScreen from '../components/monitoring/AmbientScreen';
 import { ContentPlayer } from '../services/audio/player';
+import { useRecordingStore } from '../stores/recordingStore';
+import { useAuthStore } from '../stores/authStore';
+import { usePreferencesStore } from '../stores/preferencesStore';
 import { audioAssets } from '../lib/audioAssets';
 import { colors } from '../lib/colors';
 import { fonts } from '../lib/typography';
 
 const { width: W } = Dimensions.get('window');
+
+type ScreenMode = 'playing' | 'monitoring';
 
 export default function PlayerScreen() {
   const router = useRouter();
@@ -41,23 +47,40 @@ export default function PlayerScreen() {
   const totalDurationParam = parseInt(params.duration ?? '0', 10);
   const environment = categoryToEnvironment(category);
 
+  // Auth + preferences for recording handoff
+  const userId = useAuthStore((s) => s.userId);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const sensitivity = usePreferencesStore((s) => s.sensitivity);
+  const thermostatF = usePreferencesStore((s) => s.thermostatF);
+  const monitoringTheme = usePreferencesStore((s) => s.monitoringTheme);
+  const recordingConsent = usePreferencesStore((s) => s.recordingConsent);
+
+  // Recording store
+  const startSession = useRecordingStore((s) => s.startSession);
+  const stopSession = useRecordingStore((s) => s.stopSession);
+  const recordingStatus = useRecordingStore((s) => s.status);
+  const recordingEvents = useRecordingStore((s) => s.events);
+  const recordingElapsed = useRecordingStore((s) => s.elapsedSeconds);
+
   const playerRef = useRef<ContentPlayer | null>(null);
+  const [mode, setMode] = useState<ScreenMode>('playing');
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [totalDuration, setTotalDuration] = useState(totalDurationParam);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [monitoringOverlayVisible, setMonitoringOverlayVisible] = useState(false);
 
   // Auto-hide controls after 5s
   const controlsOpacity = useSharedValue(1);
 
   useEffect(() => {
-    if (controlsVisible) {
+    if (controlsVisible && mode === 'playing') {
       const timer = setTimeout(() => {
         controlsOpacity.value = withTiming(0.3, { duration: 1500 });
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [controlsVisible]);
+  }, [controlsVisible, mode]);
 
   // Initialize and load audio on mount
   useEffect(() => {
@@ -79,6 +102,11 @@ export default function PlayerScreen() {
         }
       });
 
+      // Register fade complete callback for recording handoff
+      player.onFadeComplete(() => {
+        handleFadeComplete();
+      });
+
       // Load from bundled asset if available, otherwise no-op
       const asset = audioAssets[contentId];
       if (asset) {
@@ -96,16 +124,54 @@ export default function PlayerScreen() {
     };
   }, [contentId]);
 
+  // Handle Smart Fade → Recording handoff
+  const handleFadeComplete = useCallback(async () => {
+    // Stop and unload content player fully
+    await playerRef.current?.stop();
+
+    // Check recording consent before starting monitoring
+    if (!recordingConsent) {
+      // No consent — just go back to idle, don't record
+      router.back();
+      return;
+    }
+
+    // Transition to ambient monitoring mode
+    setMode('monitoring');
+    setMonitoringOverlayVisible(false);
+
+    // Start recording session
+    if (userId && accessToken) {
+      await startSession(userId, accessToken, sensitivity, thermostatF);
+    }
+  }, [userId, accessToken, sensitivity, thermostatF, startSession, recordingConsent, router]);
+
+  // Tap handlers
   const handleTapScreen = useCallback(() => {
+    if (mode === 'monitoring') {
+      setMonitoringOverlayVisible((v) => !v);
+      return;
+    }
     playerRef.current?.onUserInteraction();
     controlsOpacity.value = withTiming(1, { duration: 300 });
     setControlsVisible(true);
-  }, []);
+  }, [mode]);
 
   const handleBack = useCallback(async () => {
+    if (mode === 'monitoring') {
+      // Stop monitoring and go back
+      if (accessToken) await stopSession(accessToken);
+      router.back();
+      return;
+    }
     await playerRef.current?.stop();
     router.back();
-  }, [router]);
+  }, [router, mode, accessToken, stopSession]);
+
+  const handleStopMonitoring = useCallback(async () => {
+    if (accessToken) await stopSession(accessToken);
+    router.replace('/(tabs)/report');
+  }, [accessToken, stopSession, router]);
 
   const togglePlayPause = useCallback(async () => {
     const player = playerRef.current;
@@ -142,6 +208,61 @@ export default function PlayerScreen() {
     opacity: controlsOpacity.value,
   }));
 
+  // ── Monitoring mode ────────────────────────────────────────────
+  if (mode === 'monitoring') {
+    const hrs = Math.floor(recordingElapsed / 3600);
+    const mns = Math.floor((recordingElapsed % 3600) / 60);
+    const scs = recordingElapsed % 60;
+    const elapsedFormatted = hrs > 0
+      ? `${hrs}:${String(mns).padStart(2, '0')}:${String(scs).padStart(2, '0')}`
+      : `${mns}:${String(scs).padStart(2, '0')}`;
+
+    return (
+      <Pressable style={styles.container} onPress={handleTapScreen}>
+        <AmbientScreen theme={monitoringTheme} />
+
+        {/* Tap overlay — shows elapsed time + stop button */}
+        {monitoringOverlayVisible && (
+          <View style={styles.monitoringOverlay}>
+            <SafeAreaView style={styles.monitoringContent}>
+              <View style={styles.monitoringTop}>
+                <Pressable onPress={handleBack} style={styles.backButton}>
+                  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M15 18l-6-6 6-6"
+                      stroke={colors.cream}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </Pressable>
+              </View>
+
+              <View style={styles.monitoringCenter}>
+                <Text style={styles.monitoringElapsed}>{elapsedFormatted}</Text>
+                <Text style={styles.monitoringLabel}>Monitoring</Text>
+                <Text style={styles.monitoringEvents}>
+                  {recordingEvents.length} event{recordingEvents.length !== 1 ? 's' : ''} detected
+                </Text>
+              </View>
+
+              <View style={styles.monitoringBottom}>
+                <Pressable
+                  onPress={handleStopMonitoring}
+                  style={styles.stopButton}
+                >
+                  <Text style={styles.stopButtonText}>Stop Monitoring</Text>
+                </Pressable>
+              </View>
+            </SafeAreaView>
+          </View>
+        )}
+      </Pressable>
+    );
+  }
+
+  // ── Playback mode ──────────────────────────────────────────────
   return (
     <Pressable style={styles.container} onPress={handleTapScreen}>
       {/* Environment background */}
@@ -377,5 +498,60 @@ const styles = StyleSheet.create({
     borderColor: colors.glassBorder,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Monitoring mode
+  monitoringOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(11,14,20,0.7)',
+  },
+  monitoringContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  monitoringTop: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  monitoringCenter: {
+    alignItems: 'center',
+  },
+  monitoringElapsed: {
+    fontFamily: fonts.mono.medium,
+    fontSize: 48,
+    color: colors.cream,
+    marginBottom: 8,
+  },
+  monitoringLabel: {
+    fontFamily: fonts.body.regular,
+    fontSize: 14,
+    color: colors.creamMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+  monitoringEvents: {
+    fontFamily: fonts.mono.regular,
+    fontSize: 13,
+    color: colors.creamDim,
+  },
+  monitoringBottom: {
+    paddingHorizontal: 40,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  stopButton: {
+    backgroundColor: 'rgba(212,133,138,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,133,138,0.3)',
+    borderRadius: 28,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
+  stopButtonText: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: 16,
+    color: colors.dustyRose,
   },
 });

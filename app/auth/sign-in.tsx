@@ -32,6 +32,7 @@ export default function SignInScreen() {
 
     try {
       await signIn(email.trim().toLowerCase(), password);
+      router.replace('/(tabs)/drift');
     } catch (err: any) {
       if (err?.code === 'UserNotConfirmedException') {
         router.replace('/auth/verify');

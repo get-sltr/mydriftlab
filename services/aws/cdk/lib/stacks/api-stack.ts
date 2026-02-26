@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -65,15 +66,13 @@ export class ApiStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.COGNITO,
     };
 
-    // Helper to create Lambda functions
-    const createFunction = (name: string, handler: string) => {
-      const fn = new lambda.Function(this, name, {
+    // Helper to create Lambda functions (NodejsFunction auto-bundles TS → JS)
+    const createFunction = (name: string, entryFile: string) => {
+      const fn = new NodejsFunction(this, name, {
         functionName: `driftlab-${name.toLowerCase()}`,
-        runtime: lambda.Runtime.NODEJS_20_X,
-        handler,
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, '../../../lambda/functions'),
-        ),
+        runtime: Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, `../../../lambda/functions/${entryFile}`),
+        handler: 'handler',
         memorySize: 256,
         timeout: cdk.Duration.seconds(30),
         vpc,
@@ -87,7 +86,7 @@ export class ApiStack extends cdk.Stack {
     };
 
     // --- Sessions API ---
-    const sessionsHandler = createFunction('Sessions', 'sessions.handler');
+    const sessionsHandler = createFunction('Sessions', 'sessions.ts');
     const sessions = api.root.addResource('sessions');
     sessions.addMethod(
       'GET',
@@ -113,7 +112,7 @@ export class ApiStack extends cdk.Stack {
     );
 
     // --- Events API ---
-    const eventsHandler = createFunction('Events', 'events.handler');
+    const eventsHandler = createFunction('Events', 'events.ts');
     const events = api.root.addResource('events');
     events.addMethod(
       'GET',
@@ -127,7 +126,7 @@ export class ApiStack extends cdk.Stack {
     );
 
     // --- Content API ---
-    const contentHandler = createFunction('Content', 'content.handler');
+    const contentHandler = createFunction('Content', 'content.ts');
     const content = api.root.addResource('content');
     content.addMethod(
       'GET',
@@ -137,7 +136,7 @@ export class ApiStack extends cdk.Stack {
     contentBucket.grantRead(contentHandler);
 
     // --- Profile API ---
-    const profileHandler = createFunction('Profile', 'profile.handler');
+    const profileHandler = createFunction('Profile', 'profile.ts');
     const profile = api.root.addResource('profile');
     profile.addMethod(
       'GET',
@@ -153,7 +152,7 @@ export class ApiStack extends cdk.Stack {
     // --- Experiments API ---
     const experimentsHandler = createFunction(
       'Experiments',
-      'experiments.handler',
+      'experiments.ts',
     );
     const experiments = api.root.addResource('experiments');
     experiments.addMethod(

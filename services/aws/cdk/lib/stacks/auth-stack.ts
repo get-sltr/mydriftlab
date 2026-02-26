@@ -1,7 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 
 export class AuthStack extends cdk.Stack {
@@ -12,16 +13,14 @@ export class AuthStack extends cdk.Stack {
     super(scope, id, props);
 
     // Post-confirmation Lambda trigger (creates profile on sign-up)
-    const postConfirmationFn = new lambda.Function(
+    const postConfirmationFn = new NodejsFunction(
       this,
       'PostConfirmation',
       {
         functionName: 'driftlab-post-confirmation',
-        runtime: lambda.Runtime.NODEJS_20_X,
-        handler: 'postConfirmation.handler',
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, '../../../lambda/functions'),
-        ),
+        runtime: Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, '../../../lambda/functions/postConfirmation.ts'),
+        handler: 'handler',
         memorySize: 128,
         timeout: cdk.Duration.seconds(10),
       },

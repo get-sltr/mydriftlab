@@ -7,27 +7,144 @@ import {
   Switch,
   Pressable,
   Alert,
+  Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import GlowText from '../../components/ui/GlowText';
 import GlassButton from '../../components/ui/GlassButton';
 import GradientBorderCard from '../../components/ui/GradientBorderCard';
 import { useAuthStore } from '../../stores/authStore';
+import {
+  usePreferencesStore,
+  fToC,
+  cToF,
+  formatTime,
+  type MonitoringTheme,
+} from '../../stores/preferencesStore';
+import { useCBTIStore } from '../../stores/cbtiStore';
+import * as AppleHealth from '../../services/health/appleHealth';
 import { colors } from '../../lib/colors';
-import { fonts, textStyles } from '../../lib/typography';
+import { fonts } from '../../lib/typography';
 
 type Sensitivity = 'low' | 'medium' | 'high';
 
-export default function ProfileScreen() {
-  const { email, name, signOut } = useAuthStore();
+/** Convert "HH:mm" to a Date (today) for the picker */
+function hhmmToDate(hhmm: string): Date {
+  const [h, m] = hhmm.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
 
-  // Local preference state (will sync with API in future)
-  const [bedtimeGoal, setBedtimeGoal] = useState('10:30 PM');
-  const [wakeGoal, setWakeGoal] = useState('6:30 AM');
-  const [tempUnitF, setTempUnitF] = useState(true);
-  const [partnerDefault, setPartnerDefault] = useState(false);
-  const [sensitivity, setSensitivity] = useState<Sensitivity>('medium');
-  const [thermostat, setThermostat] = useState('68');
+/** Extract "HH:mm" from a Date */
+function dateToHhmm(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// Thermostat bounds (°F internally)
+const THERMO_MIN_F = 60;
+const THERMO_MAX_F = 80;
+
+const MONITORING_THEMES: { value: MonitoringTheme; label: string; icon: string }[] = [
+  { value: 'fireflies', label: 'Fireflies', icon: '.' },
+  { value: 'breathing', label: 'Breathing', icon: 'O' },
+  { value: 'particles', label: 'Particles', icon: '*' },
+  { value: 'nebula', label: 'Nebula', icon: '~' },
+  { value: 'constellation', label: 'Stars', icon: '+' },
+  { value: 'dandelion', label: 'Dandelion', icon: ',' },
+];
+
+export default function ProfileScreen() {
+  const router = useRouter();
+  const { email, name, tier, signOut } = useAuthStore();
+
+  // Persistent preferences from store
+  const {
+    bedtimeGoal,
+    wakeGoal,
+    tempUnitF,
+    partnerDefault,
+    sensitivity,
+    thermostatF,
+    monitoringTheme,
+    appleHealthEnabled,
+    sonarEnabled,
+    setBedtimeGoal,
+    setWakeGoal,
+    setTempUnitF,
+    setPartnerDefault,
+    setSensitivity,
+    setThermostatF,
+    setMonitoringTheme,
+    setAppleHealthEnabled,
+    setSonarEnabled,
+  } = usePreferencesStore();
+
+  const cbtiProgram = useCBTIStore((s) => s.program);
+  const pauseCBTI = useCBTIStore((s) => s.pauseProgram);
+  const resumeCBTI = useCBTIStore((s) => s.resumeProgram);
+
+  // Time picker state
+  const [pickerField, setPickerField] = useState<'bedtime' | 'wake' | null>(null);
+  const [pickerDate, setPickerDate] = useState(new Date());
+
+  const openTimePicker = (field: 'bedtime' | 'wake') => {
+    setPickerDate(hhmmToDate(field === 'bedtime' ? bedtimeGoal : wakeGoal));
+    setPickerField(field);
+  };
+
+  const onPickerChange = (_event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') {
+      setPickerField(null);
+      if (selected) {
+        const hhmm = dateToHhmm(selected);
+        if (pickerField === 'bedtime') setBedtimeGoal(hhmm);
+        else if (pickerField === 'wake') setWakeGoal(hhmm);
+      }
+    } else if (selected) {
+      setPickerDate(selected);
+    }
+  };
+
+  const confirmPicker = () => {
+    const hhmm = dateToHhmm(pickerDate);
+    if (pickerField === 'bedtime') setBedtimeGoal(hhmm);
+    else if (pickerField === 'wake') setWakeGoal(hhmm);
+    setPickerField(null);
+  };
+
+  // Use 12h format when imperial, 24h when metric
+  const use12h = tempUnitF;
+
+  // Thermostat display value
+  const thermoDisplay = tempUnitF ? thermostatF : fToC(thermostatF);
+  const thermoUnit = tempUnitF ? '°F' : '°C';
+
+  // Step: 1°F when imperial, convert 1°C step to °F when metric
+  const handleThermoUp = () => {
+    if (tempUnitF) {
+      if (thermostatF < THERMO_MAX_F) setThermostatF(thermostatF + 1);
+    } else {
+      const nextC = fToC(thermostatF) + 1;
+      const nextF = cToF(nextC);
+      if (nextF <= THERMO_MAX_F) setThermostatF(nextF);
+    }
+  };
+
+  const handleThermoDown = () => {
+    if (tempUnitF) {
+      if (thermostatF > THERMO_MIN_F) setThermostatF(thermostatF - 1);
+    } else {
+      const nextC = fToC(thermostatF) - 1;
+      const nextF = cToF(nextC);
+      if (nextF >= THERMO_MIN_F) setThermostatF(nextF);
+    }
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -35,7 +152,10 @@ export default function ProfileScreen() {
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: signOut,
+        onPress: async () => {
+          await signOut();
+          router.replace('/auth/sign-in');
+        },
       },
     ]);
   };
@@ -54,9 +174,19 @@ export default function ProfileScreen() {
           <Text style={styles.cardLabel}>Account</Text>
           <Text style={styles.nameText}>{name ?? 'MyDriftLAB User'}</Text>
           <Text style={styles.emailText}>{email ?? ''}</Text>
-          <View style={styles.tierBadge}>
-            <Text style={styles.tierText}>FREE</Text>
+          <View style={[styles.tierBadge, tier === 'pro' && styles.tierBadgePro]}>
+            <Text style={[styles.tierText, tier === 'pro' && styles.tierTextPro]}>
+              {tier === 'pro' ? 'PRO' : 'FREE'}
+            </Text>
           </View>
+          {tier === 'free' && (
+            <GlassButton
+              title="Upgrade to Pro"
+              onPress={() => router.push('/upgrade')}
+              size="medium"
+              style={styles.upgradeButton}
+            />
+          )}
         </GradientBorderCard>
 
         {/* Sleep Schedule */}
@@ -64,17 +194,13 @@ export default function ProfileScreen() {
         <View style={styles.row}>
           <PreferenceRow
             label="Bedtime Goal"
-            value={bedtimeGoal}
-            onPress={() => {
-              // TODO: time picker
-            }}
+            value={formatTime(bedtimeGoal, use12h)}
+            onPress={() => openTimePicker('bedtime')}
           />
           <PreferenceRow
             label="Wake Goal"
-            value={wakeGoal}
-            onPress={() => {
-              // TODO: time picker
-            }}
+            value={formatTime(wakeGoal, use12h)}
+            onPress={() => openTimePicker('wake')}
           />
         </View>
 
@@ -126,12 +252,28 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.prefRow}>
-            <Text style={styles.prefLabel}>
-              Thermostat Setting
-            </Text>
-            <Text style={styles.prefValue}>
-              {thermostat}°{tempUnitF ? 'F' : 'C'}
-            </Text>
+            <Text style={styles.prefLabel}>Thermostat Setting</Text>
+            <View style={styles.stepperRow}>
+              <Pressable
+                onPress={handleThermoDown}
+                accessibilityRole="button"
+                accessibilityLabel="Decrease thermostat"
+                style={styles.stepperButton}
+              >
+                <Text style={styles.stepperText}>−</Text>
+              </Pressable>
+              <Text style={styles.thermoValue}>
+                {thermoDisplay}{thermoUnit}
+              </Text>
+              <Pressable
+                onPress={handleThermoUp}
+                accessibilityRole="button"
+                accessibilityLabel="Increase thermostat"
+                style={styles.stepperButton}
+              >
+                <Text style={styles.stepperText}>+</Text>
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.prefRow}>
@@ -146,6 +288,39 @@ export default function ProfileScreen() {
               }}
               thumbColor={partnerDefault ? colors.lavender : colors.creamDim}
             />
+          </View>
+        </View>
+
+        {/* Monitoring Theme */}
+        <Text style={styles.sectionTitle}>Monitoring Theme</Text>
+        <View style={styles.prefCard}>
+          <Text style={styles.sensitivityDesc}>
+            Choose the ambient visual displayed during overnight monitoring.
+          </Text>
+          <View style={styles.themeGrid}>
+            {MONITORING_THEMES.map((t) => (
+              <Pressable
+                key={t.value}
+                onPress={() => setMonitoringTheme(t.value)}
+                accessibilityRole="button"
+                accessibilityLabel={t.label}
+                accessibilityState={{ selected: monitoringTheme === t.value }}
+                style={[
+                  styles.themeOption,
+                  monitoringTheme === t.value && styles.themeOptionActive,
+                ]}
+              >
+                <Text style={styles.themeEmoji}>{t.icon}</Text>
+                <Text
+                  style={[
+                    styles.themeLabel,
+                    monitoringTheme === t.value && styles.themeLabelActive,
+                  ]}
+                >
+                  {t.label}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </View>
 
@@ -181,6 +356,124 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Sonar Tracking */}
+        <Text style={styles.sectionTitle}>Sonar Tracking</Text>
+        <View style={styles.prefCard}>
+          <Text style={styles.sensitivityDesc}>
+            Uses the phone's speaker + mic for contactless movement detection.
+            Emits an inaudible 18.5kHz tone. Disable if you have pets that
+            may be sensitive to ultrasonic frequencies.
+          </Text>
+          <View style={styles.prefRow}>
+            <Text style={styles.prefLabel}>Sonar Enabled</Text>
+            <Switch
+              value={sonarEnabled}
+              onValueChange={setSonarEnabled}
+              accessibilityLabel="Sonar tracking"
+              trackColor={{
+                false: 'rgba(240,235,224,0.1)',
+                true: 'rgba(184,160,210,0.4)',
+              }}
+              thumbColor={sonarEnabled ? colors.lavender : colors.creamDim}
+            />
+          </View>
+        </View>
+
+        {/* Apple Health (iOS only) */}
+        {Platform.OS === 'ios' && (
+          <>
+            <Text style={styles.sectionTitle}>Apple Health</Text>
+            <View style={styles.prefCard}>
+              <Text style={styles.sensitivityDesc}>
+                Reads sleep stages, HRV, respiratory rate, and SpO2 from Apple Health
+                to enrich your reports. Writes sleep sessions back to Health.
+              </Text>
+              <View style={styles.prefRow}>
+                <Text style={styles.prefLabel}>Apple Health</Text>
+                <Switch
+                  value={appleHealthEnabled}
+                  onValueChange={async (enabled) => {
+                    if (enabled) {
+                      const available = await AppleHealth.isAvailable();
+                      if (!available) {
+                        Alert.alert(
+                          'Not Available',
+                          'Apple Health is not available on this device.',
+                        );
+                        return;
+                      }
+                      const granted = await AppleHealth.requestPermissions();
+                      if (!granted) {
+                        Alert.alert(
+                          'Permissions Required',
+                          'Please grant Health permissions in Settings to use this feature.',
+                        );
+                        return;
+                      }
+                    }
+                    setAppleHealthEnabled(enabled);
+                  }}
+                  accessibilityLabel="Apple Health integration"
+                  trackColor={{
+                    false: 'rgba(240,235,224,0.1)',
+                    true: 'rgba(184,160,210,0.4)',
+                  }}
+                  thumbColor={appleHealthEnabled ? colors.lavender : colors.creamDim}
+                />
+              </View>
+              {appleHealthEnabled && (
+                <Text style={styles.healthStatus}>
+                  Connected — sleep stages, HRV, SpO2, respiratory rate
+                </Text>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* Insomnia Fighter */}
+        {cbtiProgram && (cbtiProgram.status === 'active' || cbtiProgram.status === 'paused') && (
+          <>
+            <Text style={styles.sectionTitle}>Insomnia Fighter</Text>
+            <View style={styles.prefCard}>
+              <View style={styles.prefRow}>
+                <Text style={styles.prefLabel}>
+                  Week {cbtiProgram.currentWeek} of 6
+                </Text>
+                <Text style={[
+                  styles.prefValue,
+                  { color: cbtiProgram.status === 'paused' ? colors.dustyRose : colors.success },
+                ]}>
+                  {cbtiProgram.status === 'paused' ? 'Paused' : 'Active'}
+                </Text>
+              </View>
+              <View style={[styles.prefRow, { borderBottomWidth: 0 }]}>
+                <GlassButton
+                  title={cbtiProgram.status === 'paused' ? 'Resume' : 'Pause Program'}
+                  onPress={() => {
+                    if (cbtiProgram.status === 'paused') {
+                      resumeCBTI();
+                    } else {
+                      Alert.alert(
+                        'Pause Program',
+                        'You can resume at any time. Your progress will be saved.',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Pause', onPress: pauseCBTI },
+                        ],
+                      );
+                    }
+                  }}
+                  size="small"
+                  variant="secondary"
+                />
+                <Pressable onPress={() => router.push('/cbti-info')}>
+                  <Text style={styles.learnMoreLink}>About CBT-I</Text>
+                </Pressable>
+              </View>
+            </View>
+          </>
+        )}
+
         {/* Sign Out */}
         <GlassButton
           title="Sign Out"
@@ -195,6 +488,47 @@ export default function ProfileScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* iOS time picker modal */}
+      {Platform.OS === 'ios' && pickerField !== null && (
+        <Modal transparent animationType="slide">
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerSheet}>
+              <View style={styles.pickerHeader}>
+                <Pressable onPress={() => setPickerField(null)}>
+                  <Text style={styles.pickerCancel}>Cancel</Text>
+                </Pressable>
+                <Text style={styles.pickerTitle}>
+                  {pickerField === 'bedtime' ? 'Bedtime Goal' : 'Wake Goal'}
+                </Text>
+                <Pressable onPress={confirmPicker}>
+                  <Text style={styles.pickerDone}>Done</Text>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                value={pickerDate}
+                mode="time"
+                display="spinner"
+                is24Hour={!use12h}
+                onChange={onPickerChange}
+                textColor={colors.cream}
+                themeVariant="dark"
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Android time picker (renders inline, auto-dismisses) */}
+      {Platform.OS === 'android' && pickerField !== null && (
+        <DateTimePicker
+          value={pickerDate}
+          mode="time"
+          display="default"
+          is24Hour={!use12h}
+          onChange={onPickerChange}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -266,6 +600,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.lavender,
     letterSpacing: 1.5,
+  },
+  tierBadgePro: {
+    backgroundColor: 'rgba(184,160,210,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(184,160,210,0.3)',
+  },
+  tierTextPro: {
+    color: colors.lavenderLight,
+  },
+  upgradeButton: {
+    marginTop: 14,
+    alignSelf: 'stretch',
   },
   sectionTitle: {
     fontFamily: fonts.headline.medium,
@@ -349,6 +695,32 @@ const styles = StyleSheet.create({
     color: colors.lavender,
     fontFamily: fonts.mono.medium,
   },
+  // Thermostat stepper
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepperButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(240,235,224,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperText: {
+    fontFamily: fonts.mono.medium,
+    fontSize: 18,
+    color: colors.lavender,
+  },
+  thermoValue: {
+    fontFamily: fonts.mono.medium,
+    fontSize: 16,
+    color: colors.cream,
+    minWidth: 48,
+    textAlign: 'center',
+  },
   sensitivityDesc: {
     fontFamily: fonts.body.light,
     fontSize: 13,
@@ -381,6 +753,51 @@ const styles = StyleSheet.create({
     color: colors.lavender,
     fontFamily: fonts.body.semiBold,
   },
+  // Monitoring theme picker
+  themeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  themeOption: {
+    width: '31%' as any,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(240,235,224,0.05)',
+    alignItems: 'center',
+  },
+  themeOptionActive: {
+    backgroundColor: 'rgba(184,160,210,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(184,160,210,0.3)',
+  },
+  themeEmoji: {
+    fontFamily: fonts.mono.regular,
+    fontSize: 18,
+    color: colors.creamDim,
+    marginBottom: 4,
+  },
+  themeLabel: {
+    fontFamily: fonts.body.regular,
+    fontSize: 11,
+    color: colors.creamDim,
+  },
+  themeLabelActive: {
+    color: colors.lavender,
+    fontFamily: fonts.body.semiBold,
+  },
+  healthStatus: {
+    fontFamily: fonts.mono.regular,
+    fontSize: 11,
+    color: colors.success,
+    paddingVertical: 8,
+  },
+  learnMoreLink: {
+    fontFamily: fonts.body.regular,
+    fontSize: 13,
+    color: colors.lavender,
+    textDecorationLine: 'underline',
+  },
   signOutButton: {
     marginTop: 8,
   },
@@ -390,5 +807,41 @@ const styles = StyleSheet.create({
     color: colors.creamDim,
     textAlign: 'center',
     marginTop: 24,
+  },
+  // Time picker modal (iOS)
+  pickerOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  pickerSheet: {
+    backgroundColor: colors.navy,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(240,235,224,0.08)',
+  },
+  pickerCancel: {
+    fontFamily: fonts.body.regular,
+    fontSize: 16,
+    color: colors.creamMuted,
+  },
+  pickerTitle: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: 16,
+    color: colors.cream,
+  },
+  pickerDone: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: 16,
+    color: colors.lavender,
   },
 });

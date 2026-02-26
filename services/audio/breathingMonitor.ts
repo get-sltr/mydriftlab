@@ -14,6 +14,7 @@
  */
 
 import { Audio } from 'expo-av';
+import { zeroMeanNormalize, movingAverage, autocorrelate, lagToBpm } from './dsp';
 
 // ── Configuration ──────────────────────────────────────────────────
 
@@ -21,6 +22,8 @@ const SAMPLE_RATE_HZ = 10; // metering poll rate
 const SAMPLE_INTERVAL_MS = 1000 / SAMPLE_RATE_HZ; // 100ms
 const ANALYSIS_WINDOW_S = 30;
 const SAMPLES_PER_WINDOW = ANALYSIS_WINDOW_S * SAMPLE_RATE_HZ; // 300
+/** Rotate temp recording every 5 min to prevent unbounded file growth */
+const ROTATION_INTERVAL_MS = 5 * 60 * 1000;
 
 /** Breaths per minute — below this we consider "sleep breathing" */
 const SLEEP_ONSET_BPM = 14;
@@ -54,8 +57,10 @@ export class BreathingMonitor {
   private meteringBuffer: number[] = [];
   private callback: BreathingCallback | null = null;
   private analysisTimer: ReturnType<typeof setInterval> | null = null;
+  private rotationTimer: ReturnType<typeof setInterval> | null = null;
   private consecutiveSleepWindows = 0;
   private running = false;
+  private isRotating = false;
 
   /** Register a callback that fires every analysis window (~30 s). */
   onStateChange(cb: BreathingCallback): void {
@@ -118,6 +123,12 @@ export class BreathingMonitor {
       () => this.analyze(),
       ANALYSIS_WINDOW_S * 1000,
     );
+
+    // Rotate temp file every 5 min to prevent file growth
+    this.rotationTimer = setInterval(
+      () => this.rotateRecording(),
+      ROTATION_INTERVAL_MS,
+    );
   }
 
   /** Stop monitoring and clean up the temp recording file. */
@@ -128,6 +139,10 @@ export class BreathingMonitor {
     if (this.analysisTimer) {
       clearInterval(this.analysisTimer);
       this.analysisTimer = null;
+    }
+    if (this.rotationTimer) {
+      clearInterval(this.rotationTimer);
+      this.rotationTimer = null;
     }
 
     if (this.recording) {
@@ -155,6 +170,62 @@ export class BreathingMonitor {
     this.consecutiveSleepWindows = 0;
   }
 
+  // ── Recording rotation ────────────────────────────────────────
+
+  /** Stop current recording, delete temp file, start fresh. */
+  private async rotateRecording(): Promise<void> {
+    if (!this.running || this.isRotating || !this.recording) return;
+    this.isRotating = true;
+
+    try {
+      // Stop and discard — no clips needed from breathing monitor
+      await this.recording.stopAndUnloadAsync();
+      this.recording = null;
+
+      // Start a new recording with the same config
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync({
+        isMeteringEnabled: true,
+        android: {
+          extension: '.3gp',
+          outputFormat: Audio.AndroidOutputFormat.THREE_GPP,
+          audioEncoder: Audio.AndroidAudioEncoder.AMR_NB,
+          sampleRate: 8000,
+          numberOfChannels: 1,
+          bitRate: 12200,
+        },
+        ios: {
+          extension: '.caf',
+          audioQuality: Audio.IOSAudioQuality.MIN,
+          sampleRate: 8000,
+          numberOfChannels: 1,
+          bitRate: 12200,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: { mimeType: 'audio/webm', bitsPerSecond: 12200 },
+      });
+
+      recording.setProgressUpdateInterval(SAMPLE_INTERVAL_MS);
+      recording.setOnRecordingStatusUpdate((status) => {
+        if (status.isRecording && status.metering !== undefined) {
+          this.meteringBuffer.push(status.metering);
+          if (this.meteringBuffer.length > SAMPLES_PER_WINDOW * 2) {
+            this.meteringBuffer = this.meteringBuffer.slice(-SAMPLES_PER_WINDOW);
+          }
+        }
+      });
+
+      await recording.startAsync();
+      this.recording = recording;
+    } catch {
+      // Rotation failure — monitor may stop working
+    } finally {
+      this.isRotating = false;
+    }
+  }
+
   // ── Analysis ───────────────────────────────────────────────────
 
   private analyze(): void {
@@ -164,14 +235,15 @@ export class BreathingMonitor {
     const raw = this.meteringBuffer.slice(-SAMPLES_PER_WINDOW);
 
     // 1. Normalize (zero-mean)
-    const mean = raw.reduce((a, b) => a + b, 0) / raw.length;
-    const centered = raw.map((v) => v - mean);
+    const centered = zeroMeanNormalize(raw);
 
     // 2. Smooth with 5-sample (~500 ms) moving average
     const smoothed = movingAverage(centered, 5);
 
     // 3. Autocorrelation to find dominant breathing cycle
-    const { rate, regularity } = findBreathingRate(smoothed);
+    const { bestLag, strength } = autocorrelate(smoothed, MIN_LAG, MAX_LAG);
+    const rate = lagToBpm(bestLag, SAMPLE_RATE_HZ);
+    const regularity = strength;
 
     // 4. Evaluate sleep onset
     const looksLikeSleep =
@@ -190,56 +262,4 @@ export class BreathingMonitor {
         this.consecutiveSleepWindows >= CONSECUTIVE_WINDOWS_NEEDED,
     });
   }
-}
-
-// ── DSP helpers ──────────────────────────────────────────────────
-
-function movingAverage(data: number[], window: number): number[] {
-  const half = Math.floor(window / 2);
-  const out: number[] = new Array(data.length);
-  for (let i = 0; i < data.length; i++) {
-    const lo = Math.max(0, i - half);
-    const hi = Math.min(data.length - 1, i + half);
-    let sum = 0;
-    for (let j = lo; j <= hi; j++) sum += data[j];
-    out[i] = sum / (hi - lo + 1);
-  }
-  return out;
-}
-
-function findBreathingRate(samples: number[]): {
-  rate: number;
-  regularity: number;
-} {
-  const n = samples.length;
-
-  // Energy normalization
-  let energy = 0;
-  for (let i = 0; i < n; i++) energy += samples[i] * samples[i];
-  if (energy === 0) return { rate: 0, regularity: 0 };
-
-  // Find best lag via autocorrelation
-  let bestLag = 0;
-  let bestCorr = -Infinity;
-
-  for (let lag = MIN_LAG; lag <= MAX_LAG && lag < n; lag++) {
-    let corr = 0;
-    for (let i = 0; i < n - lag; i++) {
-      corr += samples[i] * samples[i + lag];
-    }
-    corr /= energy; // normalize to 0–1 range
-    if (corr > bestCorr) {
-      bestCorr = corr;
-      bestLag = lag;
-    }
-  }
-
-  if (bestLag === 0 || bestCorr < 0.15) {
-    return { rate: 0, regularity: 0 };
-  }
-
-  const rate = (SAMPLE_RATE_HZ * 60) / bestLag;
-  const regularity = Math.max(0, Math.min(1, bestCorr));
-
-  return { rate, regularity };
 }

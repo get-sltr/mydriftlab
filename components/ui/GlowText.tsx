@@ -1,6 +1,6 @@
 import { Text, StyleSheet, TextStyle } from 'react-native';
 import { colors } from '../../lib/colors';
-import { fonts, textStyles } from '../../lib/typography';
+import { fonts } from '../../lib/typography';
 
 interface GlowTextProps {
   children: string;

@@ -22,7 +22,8 @@
     "production": {
       "ios": {
         "appleId": "kevsellsla@gmail.com",
-        "appleTeamId": "A2RL4W62BR"
+        "appleTeamId": "A2RL4W62BR",
+        "ascAppId": "6759631582"
       }
     }
   }

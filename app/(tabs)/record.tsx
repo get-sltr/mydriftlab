@@ -24,8 +24,10 @@ import FilmGrain from '../../components/ui/FilmGrain';
 import GlassButton from '../../components/ui/GlassButton';
 import BreathingOrb from '../../components/recording/BreathingOrb';
 import EventToast from '../../components/recording/EventToast';
+import { useRouter } from 'expo-router';
 import { useRecordingStore } from '../../stores/recordingStore';
 import { useAuthStore } from '../../stores/authStore';
+import { usePreferencesStore, fToC } from '../../stores/preferencesStore';
 
 // Progressive dimming stages (minutes → brightness)
 const DIMMING_STAGES = [
@@ -44,6 +46,7 @@ function formatElapsed(seconds: number): string {
 
 export default function RecordScreen() {
   useKeepAwake();
+  const router = useRouter();
 
   const {
     status,
@@ -60,6 +63,7 @@ export default function RecordScreen() {
   } = useRecordingStore();
 
   const { userId, accessToken } = useAuthStore();
+  const { sensitivity, thermostatF, tempUnitF, recordingConsent } = usePreferencesStore();
 
   const isRecording = status === 'recording';
   const isLoading = status === 'starting' || status === 'stopping';
@@ -145,10 +149,15 @@ export default function RecordScreen() {
       }
       await stopSession(accessToken);
     } else {
+      // Check recording consent before starting
+      if (!recordingConsent) {
+        router.push('/recording-consent');
+        return;
+      }
       recordUserInteraction();
-      await startSession(userId, accessToken, 'medium');
+      await startSession(userId, accessToken, sensitivity, thermostatF);
     }
-  }, [userId, accessToken, isRecording, startSession, stopSession, recordUserInteraction]);
+  }, [userId, accessToken, isRecording, startSession, stopSession, recordUserInteraction, recordingConsent, router]);
 
   const handleScreenPress = useCallback(() => {
     if (isRecording) {
@@ -202,9 +211,9 @@ export default function RecordScreen() {
               </Text>
               <Text style={styles.statLabel}>Elapsed</Text>
             </View>
-            <View style={styles.stat} accessible accessibilityLabel={`Temperature ${temperatureF != null ? `${temperatureF} degrees Fahrenheit` : 'unavailable'}`}>
+            <View style={styles.stat} accessible accessibilityLabel={`Temperature ${temperatureF != null ? `${tempUnitF ? temperatureF : fToC(temperatureF)} degrees ${tempUnitF ? 'Fahrenheit' : 'Celsius'}` : 'unavailable'}`}>
               <Text style={styles.statValue}>
-                {temperatureF != null ? `${temperatureF}\u00B0F` : '--'}
+                {temperatureF != null ? `${tempUnitF ? temperatureF : fToC(temperatureF)}\u00B0${tempUnitF ? 'F' : 'C'}` : '--'}
               </Text>
               <Text style={styles.statLabel}>Temp</Text>
             </View>

@@ -34,10 +34,13 @@ export type SmartFadeCallback = (state: {
   smartFadeAt: string | null;
 }) => void;
 
+export type FadeCompleteCallback = () => void;
+
 export class ContentPlayer {
   private sound: Audio.Sound | null = null;
   private statusCallback: PlaybackStatusCallback | null = null;
   private fadeCallback: SmartFadeCallback | null = null;
+  private fadeCompleteCallback: FadeCompleteCallback | null = null;
   private totalDurationMs = 0;
 
   // Smart Fade state
@@ -67,6 +70,11 @@ export class ContentPlayer {
   /** Register a callback for Smart Fade state changes */
   onSmartFade(callback: SmartFadeCallback): void {
     this.fadeCallback = callback;
+  }
+
+  /** Register a callback for when Smart Fade completes (volume reaches 0) */
+  onFadeComplete(callback: FadeCompleteCallback): void {
+    this.fadeCompleteCallback = callback;
   }
 
   /** Enable or disable Smart Fade (default: enabled) */
@@ -208,6 +216,10 @@ export class ContentPlayer {
         this.cancelFade();
         // Pause playback at zero volume — audio is done
         this.sound?.pauseAsync().catch(() => {});
+        // Stop breathing monitor — no longer needed
+        this.stopBreathingMonitor().catch(() => {});
+        // Notify listener (e.g. to start recording handoff)
+        this.fadeCompleteCallback?.();
       }
     }, FADE_TICK_MS);
   }

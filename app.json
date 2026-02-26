@@ -20,11 +20,18 @@
         "NSMicrophoneUsageDescription": "MyDriftLAB uses the microphone to monitor your sleep environment and detect noise disruptions. Audio is processed on-device and never uploaded.",
         "NSMotionUsageDescription": "MyDriftLAB uses motion sensors to detect movement during sleep.",
         "UIBackgroundModes": [
-          "audio"
+          "audio",
+          "processing"
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "7"
+      "buildNumber": "9",
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": [
+          "health-records"
+        ]
+      }
     },
     "android": {
       "package": "com.sltrdigital.driftlab",
@@ -56,7 +63,13 @@
           "motionPermission": "MyDriftLAB uses motion sensors to detect movement during sleep."
         }
       ],
-      "expo-brightness"
+      "expo-brightness",
+      "react-native-iap",
+      "@react-native-community/datetimepicker",
+      ["@kingstinct/react-native-healthkit", {
+        "NSHealthShareUsageDescription": "MyDriftLab reads sleep stages, heart rate variability, and respiratory data from Apple Health to enrich your sleep insights.",
+        "NSHealthUpdateUsageDescription": "MyDriftLab writes your sleep sessions and breathing data to Apple Health so all your health data stays in one place."
+      }]
     ],
     "extra": {
       "router": {},

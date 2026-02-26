@@ -6,6 +6,7 @@ import { Construct } from 'constructs';
 
 export class StorageStack extends cdk.Stack {
   public readonly contentBucket: s3.Bucket;
+  public readonly clipsBucket: s3.Bucket;
   public readonly distribution: cloudfront.Distribution;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -24,6 +25,32 @@ export class StorageStack extends cdk.Stack {
           allowedOrigins: ['*'],
           allowedHeaders: ['*'],
           maxAge: 86400,
+        },
+      ],
+    });
+
+    // S3 bucket for user audio clips (recordings, flagged segments)
+    // Auto-expires all objects 11 days after creation
+    this.clipsBucket = new s3.Bucket(this, 'ClipsBucket', {
+      bucketName: `driftlab-clips-${this.account}`,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      versioned: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      lifecycleRules: [
+        {
+          id: 'auto-expire-clips',
+          enabled: true,
+          expiration: cdk.Duration.days(11),
+        },
+      ],
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
+          allowedOrigins: ['*'],
+          allowedHeaders: ['*'],
+          maxAge: 3600,
         },
       ],
     });
@@ -55,6 +82,11 @@ export class StorageStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'DistributionDomainName', {
       value: this.distribution.distributionDomainName,
       exportName: 'DriftLab-CDNDomain',
+    });
+
+    new cdk.CfnOutput(this, 'ClipsBucketName', {
+      value: this.clipsBucket.bucketName,
+      exportName: 'DriftLab-ClipsBucketName',
     });
   }
 }

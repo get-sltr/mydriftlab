@@ -24,16 +24,24 @@ import {
 } from '@expo-google-fonts/ibm-plex-mono';
 import {
   LibreBaskerville_400Regular,
+  LibreBaskerville_400Regular_Italic,
   LibreBaskerville_700Bold,
 } from '@expo-google-fonts/libre-baskerville';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../stores/authStore';
+import { usePreferencesStore } from '../stores/preferencesStore';
+import { ClipKeeper } from '../services/audio/clipKeeper';
+import {
+  configureNotifications,
+  requestNotificationPermissions,
+} from '../services/notifications/clipReminder';
 import { colors } from '../lib/colors';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
+  const initPreferences = usePreferencesStore((s) => s.initialize);
 
   const [fontsLoaded] = useFonts({
     CormorantGaramond_300Light,
@@ -51,15 +59,23 @@ export default function RootLayout() {
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     LibreBaskerville_400Regular,
+    LibreBaskerville_400Regular_Italic,
     LibreBaskerville_700Bold,
   });
 
   useEffect(() => {
     if (fontsLoaded) {
-      // Initialize auth state, then hide splash
-      initialize().finally(() => {
+      // Initialize auth + preferences, then hide splash
+      Promise.all([initialize(), initPreferences()]).finally(() => {
         SplashScreen.hideAsync();
       });
+
+      // Non-blocking: clean up expired audio clips (>10 days old)
+      ClipKeeper.cleanup();
+
+      // Non-blocking: configure local notifications for clip expiry reminders
+      configureNotifications();
+      requestNotificationPermissions();
     }
   }, [fontsLoaded]);
 
@@ -90,6 +106,20 @@ export default function RootLayout() {
           options={{
             animation: 'fade',
             presentation: 'fullScreenModal',
+          }}
+        />
+        <Stack.Screen
+          name="recording-consent"
+          options={{
+            animation: 'slide_from_bottom',
+            presentation: 'modal',
+          }}
+        />
+        <Stack.Screen
+          name="upgrade"
+          options={{
+            animation: 'slide_from_bottom',
+            presentation: 'modal',
           }}
         />
       </Stack>

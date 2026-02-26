@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientBorderCard from '../ui/GradientBorderCard';
 import { colors } from '../../lib/colors';
-import { fonts, textStyles } from '../../lib/typography';
+import { fonts } from '../../lib/typography';
 
 interface RoutineCardProps {
   /** Whether the user has enough history for personalization */

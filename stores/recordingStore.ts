@@ -8,9 +8,17 @@
  */
 
 import { create } from 'zustand';
-import type { EnvironmentEvent } from '../lib/types';
+import type {
+  EnvironmentEvent,
+  BreathTrendSummary,
+  SleepEfficiencyData,
+  SonarState,
+} from '../lib/types';
 import { AudioRecorder } from '../services/audio/recorder';
+import { ClipKeeper } from '../services/audio/clipKeeper';
 import { RuleEngine } from '../services/audio/ruleEngine';
+import { SonarTracker } from '../services/audio/sonar';
+import { BreathTrendAnalyzer } from '../services/analysis/breathTrend';
 import { SensorManager } from '../services/sensors/SensorManager';
 import {
   createSmartFadeState,
@@ -22,6 +30,8 @@ import { createSession, updateSession } from '../services/aws/sessions';
 import { createEvent } from '../services/aws/events';
 import { calculateRestScore } from '../services/analysis/scoring';
 import { writeNightSummary } from '../services/analysis/summaryWriter';
+import * as AppleHealth from '../services/health/appleHealth';
+import { scheduleClipExpiryReminder } from '../services/notifications/clipReminder';
 
 export type RecordingStatus = 'idle' | 'starting' | 'recording' | 'stopping' | 'error';
 
@@ -37,21 +47,31 @@ interface RecordingState {
   smartFadeTriggered: boolean;
   error: string | null;
 
+  // Sonar + BreathTrend + Apple Health state
+  breathTrend: BreathTrendSummary | null;
+  sleepEfficiency: SleepEfficiencyData | null;
+  sonarState: SonarState | null;
+
   startSession: (
     userId: string,
     token: string,
     sensitivity: 'low' | 'medium' | 'high',
     thermostatF?: number,
+    sonarEnabled?: boolean,
+    appleHealthEnabled?: boolean,
   ) => Promise<void>;
-  stopSession: (token: string) => Promise<void>;
+  stopSession: (token: string, appleHealthEnabled?: boolean) => Promise<void>;
   recordUserInteraction: () => void;
   dismissToast: () => void;
 }
 
 // Module-level service instances (non-serializable, outside Zustand)
 let recorder: AudioRecorder | null = null;
+let clipKeeper: ClipKeeper | null = null;
 let ruleEngine: RuleEngine | null = null;
 let sensorManager: SensorManager | null = null;
+let sonarTracker: SonarTracker | null = null;
+let breathTrendAnalyzer: BreathTrendAnalyzer | null = null;
 let smartFadeState: SmartFadeState | null = null;
 let analysisTimer: ReturnType<typeof setInterval> | null = null;
 let elapsedTimer: ReturnType<typeof setInterval> | null = null;
@@ -74,8 +94,11 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
   temperatureF: null,
   smartFadeTriggered: false,
   error: null,
+  breathTrend: null,
+  sleepEfficiency: null,
+  sonarState: null,
 
-  startSession: async (userId, token, sensitivity, thermostatF) => {
+  startSession: async (userId, token, sensitivity, thermostatF, sonarEnabled = true, appleHealthEnabled = false) => {
     const { status } = get();
     if (status !== 'idle') return;
 
@@ -97,10 +120,34 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
       sensorManager = new SensorManager();
       smartFadeState = createSmartFadeState();
 
-      // Start audio recording with level callback
-      await recorder.start((level) => {
-        set({ currentDb: level.splDb });
-      });
+      // Initialize ClipKeeper for segment storage
+      const dateStr = new Date().toISOString().split('T')[0];
+      clipKeeper = new ClipKeeper(sessionId, dateStr);
+      await clipKeeper.init();
+
+      // Initialize Sonar + BreathTrend
+      breathTrendAnalyzer = new BreathTrendAnalyzer();
+      if (sonarEnabled) {
+        sonarTracker = new SonarTracker();
+        sonarTracker.onStateChange((state) => {
+          set({ sonarState: state });
+        });
+        await sonarTracker.start();
+      }
+
+      // Start audio recording with level callback + segment rotation
+      await recorder.start(
+        (level) => {
+          set({ currentDb: level.splDb });
+          // Feed metering data to BreathTrend and Sonar
+          breathTrendAnalyzer?.pushSample(level.splDb);
+          sonarTracker?.pushSample(level.splDb);
+        },
+        (uri, startTime, endTime) => {
+          // Segment complete — hand off to ClipKeeper
+          clipKeeper?.receiveSegment(uri, startTime, endTime).catch(() => {});
+        },
+      );
 
       // Start sensors
       await sensorManager.start(sessionId, (event) => {
@@ -146,14 +193,17 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
       // Cleanup on failure
       await recorder?.stop().catch(() => {});
       await sensorManager?.stop().catch(() => {});
+      await sonarTracker?.stop().catch(() => {});
       clearTimers();
       recorder = null;
       ruleEngine = null;
       sensorManager = null;
+      sonarTracker = null;
+      breathTrendAnalyzer = null;
     }
   },
 
-  stopSession: async (token) => {
+  stopSession: async (token, appleHealthEnabled = false) => {
     const { status, sessionId } = get();
     if (status !== 'recording' || !sessionId) return;
 
@@ -161,13 +211,22 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
 
     clearTimers();
 
+    // Finalize BreathTrend and Sonar before stopping services
+    const breathTrendSummary = breathTrendAnalyzer?.finalize() ?? null;
+    const sleepEfficiencyData = sonarTracker?.getSleepEfficiency() ?? null;
+
     // Stop services
     await recorder?.stop().catch(() => {});
     await sensorManager?.stop().catch(() => {});
+    await sonarTracker?.stop().catch(() => {});
+    await clipKeeper?.finalize().catch(() => {});
 
     recorder = null;
+    clipKeeper = null;
     ruleEngine = null;
     sensorManager = null;
+    sonarTracker = null;
+    breathTrendAnalyzer = null;
     smartFadeState = null;
 
     // Compute score and summary from accumulated events
@@ -179,6 +238,12 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
     const durationMinutes = Math.round(elapsedSeconds / 60);
     const nightSummary = writeNightSummary(fullEvents, durationMinutes, restScore);
 
+    // Store breath trend and sleep efficiency in state
+    set({
+      breathTrend: breathTrendSummary,
+      sleepEfficiency: sleepEfficiencyData,
+    });
+
     // Update backend session with score + summary
     try {
       await updateSession(token, sessionId, {
@@ -189,6 +254,28 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
       });
     } catch {
       // Non-critical — session can be closed later
+    }
+
+    // Apple Health integration (if enabled)
+    if (appleHealthEnabled) {
+      try {
+        const sessionStart = new Date(
+          Date.now() - elapsedSeconds * 1000,
+        );
+        const sessionEnd = new Date();
+
+        // Write sleep session to HealthKit
+        await AppleHealth.writeSleepSession(sessionStart, sessionEnd);
+      } catch {
+        // Apple Health write failure is non-critical
+      }
+    }
+
+    // Schedule day-10 clip expiry reminder if clips were kept
+    const clipCount = fullEvents.length; // clips are kept for events
+    if (clipCount > 0) {
+      const dateStr = new Date().toISOString();
+      scheduleClipExpiryReminder(dateStr, sessionId, clipCount).catch(() => {});
     }
 
     set({ status: 'idle', sessionId: null });
@@ -208,12 +295,15 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
 
 /** Handle a detected event — add to store and persist to backend */
 function handleEvent(event: Partial<EnvironmentEvent>, token: string) {
-  const store = useRecordingStore.getState();
-
   useRecordingStore.setState((s) => ({
     events: [...s.events, event],
     recentToastEvent: event,
   }));
+
+  // Flag the current clip segment so it's kept (not discarded)
+  if (event.id && clipKeeper) {
+    clipKeeper.flagCurrentSegment(event.id);
+  }
 
   // Auto-dismiss toast after 5s
   if (toastTimer) clearTimeout(toastTimer);
