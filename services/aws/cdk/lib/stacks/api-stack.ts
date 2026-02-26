@@ -166,6 +166,18 @@ export class ApiStack extends cdk.Stack {
       authMethodOptions,
     );
 
+    // --- App Store Server Notifications (PUBLIC — no auth) ---
+    const appStoreHandler = createFunction(
+      'AppStoreNotifications',
+      'appStoreNotifications.ts',
+    );
+    const appStoreNotifications = api.root.addResource('apple-notifications');
+    appStoreNotifications.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(appStoreHandler),
+      // No auth — Apple needs to POST directly
+    );
+
     // Outputs
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url,

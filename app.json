@@ -23,9 +23,12 @@
           "audio",
           "processing"
         ],
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "com.sltrdigital.driftlab.background-processing"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "13",
+      "buildNumber": "16",
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": [
