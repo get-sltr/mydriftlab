@@ -82,7 +82,11 @@ export default function SignInScreen() {
               returnKeyType="done"
               onSubmitEditing={handleSignIn}
               rightIcon={
-                <Pressable onPress={() => setShowPassword(!showPassword)}>
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                >
                   <Text style={styles.showHide}>
                     {showPassword ? 'Hide' : 'Show'}
                   </Text>
@@ -90,7 +94,7 @@ export default function SignInScreen() {
               }
             />
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
 
             <GlassButton
               title="Sign In"
@@ -105,7 +109,7 @@ export default function SignInScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account?</Text>
-            <Pressable onPress={() => router.push('/auth/sign-up')}>
+            <Pressable onPress={() => router.push('/auth/sign-up')} accessibilityRole="link" accessibilityLabel="Create an account">
               <Text style={styles.footerLink}> Create one</Text>
             </Pressable>
           </View>

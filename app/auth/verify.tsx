@@ -76,7 +76,7 @@ export default function VerifyScreen() {
             onSubmitEditing={handleVerify}
           />
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
 
           <GlassButton
             title="Verify Email"

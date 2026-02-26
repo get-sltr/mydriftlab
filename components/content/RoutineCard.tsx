@@ -11,7 +11,7 @@ interface RoutineCardProps {
 
 export default function RoutineCard({ hasHistory = false }: RoutineCardProps) {
   return (
-    <GradientBorderCard style={styles.outer}>
+    <GradientBorderCard style={styles.outer} accessibilityLabel="Tonight's Routine">
       <View style={styles.header}>
         <View style={styles.sparkle} />
         <Text style={styles.label}>Tonight's Routine</Text>

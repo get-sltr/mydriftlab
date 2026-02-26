@@ -125,7 +125,7 @@ export default function SignUpScreen() {
             />
 
             {displayError ? (
-              <Text style={styles.errorText}>{displayError}</Text>
+              <Text style={styles.errorText} accessibilityRole="alert">{displayError}</Text>
             ) : null}
 
             <GlassButton
@@ -146,7 +146,7 @@ export default function SignUpScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account?</Text>
-            <Pressable onPress={() => router.back()}>
+            <Pressable onPress={() => router.back()} accessibilityRole="link" accessibilityLabel="Sign in to existing account">
               <Text style={styles.footerLink}> Sign in</Text>
             </Pressable>
           </View>

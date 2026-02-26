@@ -23,6 +23,7 @@ interface AuthState {
   userId: string | null;
   email: string | null;
   name: string | null;
+  tier: 'free' | 'pro';
   accessToken: string | null;
   idToken: string | null;
   error: string | null;
@@ -42,6 +43,7 @@ interface AuthState {
 
 const STORE_KEY_EMAIL = 'driftlab_email';
 const STORE_KEY_NAME = 'driftlab_name';
+const STORE_KEY_TIER = 'driftlab_tier';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
@@ -49,6 +51,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userId: null,
   email: null,
   name: null,
+  tier: 'free',
   accessToken: null,
   idToken: null,
   error: null,
@@ -62,12 +65,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (session && session.isValid()) {
         const email = await SecureStore.getItemAsync(STORE_KEY_EMAIL);
         const name = await SecureStore.getItemAsync(STORE_KEY_NAME);
+        const storedTier = await SecureStore.getItemAsync(STORE_KEY_TIER);
+        const tier = (storedTier === 'pro' ? 'pro' : 'free') as 'free' | 'pro';
 
         set({
           isAuthenticated: true,
           userId: getUserSub(session),
           email,
           name,
+          tier,
           accessToken: getAccessToken(session),
           idToken: getIdToken(session),
           isLoading: false,
@@ -172,6 +178,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userId: null,
       email: null,
       name: null,
+      tier: 'free',
       accessToken: null,
       idToken: null,
       pendingEmail: null,

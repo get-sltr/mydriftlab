@@ -196,19 +196,19 @@ export default function RecordScreen() {
 
           {/* Bottom stats */}
           <View style={styles.statsRow}>
-            <View style={styles.stat}>
+            <View style={styles.stat} accessible accessibilityLabel={`Elapsed time ${isRecording ? formatElapsed(elapsedSeconds) : '0:00'}`}>
               <Text style={styles.statValue}>
                 {isRecording ? formatElapsed(elapsedSeconds) : '0:00'}
               </Text>
               <Text style={styles.statLabel}>Elapsed</Text>
             </View>
-            <View style={styles.stat}>
+            <View style={styles.stat} accessible accessibilityLabel={`Temperature ${temperatureF != null ? `${temperatureF} degrees Fahrenheit` : 'unavailable'}`}>
               <Text style={styles.statValue}>
                 {temperatureF != null ? `${temperatureF}\u00B0F` : '--'}
               </Text>
               <Text style={styles.statLabel}>Temp</Text>
             </View>
-            <View style={styles.stat}>
+            <View style={styles.stat} accessible accessibilityLabel={`${events.length} events detected`}>
               <Text style={styles.statValue}>{events.length}</Text>
               <Text style={styles.statLabel}>Events</Text>
             </View>
@@ -216,7 +216,7 @@ export default function RecordScreen() {
 
           {/* Recording indicator */}
           {isRecording && (
-            <View style={styles.recordingIndicator}>
+            <View style={styles.recordingIndicator} accessible accessibilityLabel="Monitoring in progress" accessibilityRole="text">
               <Animated.View style={[styles.recordingDot, pulseStyle]} />
               <Text style={styles.recordingText}>Monitoring</Text>
             </View>

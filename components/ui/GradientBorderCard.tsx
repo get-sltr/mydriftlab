@@ -6,15 +6,17 @@ interface GradientBorderCardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   innerStyle?: ViewStyle;
+  accessibilityLabel?: string;
 }
 
 export default function GradientBorderCard({
   children,
   style,
   innerStyle,
+  accessibilityLabel,
 }: GradientBorderCardProps) {
   return (
-    <View style={[styles.outer, style]}>
+    <View style={[styles.outer, style]} accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel}>
       <LinearGradient
         colors={[colors.lavender, 'transparent', colors.dustyRose]}
         start={{ x: 0, y: 0 }}

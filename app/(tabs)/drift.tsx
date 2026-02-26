@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import FloatingParticles from '../../components/ui/FloatingParticles';
@@ -9,6 +9,8 @@ import GlassButton from '../../components/ui/GlassButton';
 import RoutineCard from '../../components/content/RoutineCard';
 import ContentRail from '../../components/content/ContentRail';
 import { ContentItem } from '../../lib/types';
+import { useAuthStore } from '../../stores/authStore';
+import { canAccess } from '../../lib/freeTier';
 import { colors } from '../../lib/colors';
 import { fonts, textStyles } from '../../lib/typography';
 
@@ -17,6 +19,7 @@ import sampleContent from '../../data/sampleContent.json';
 
 export default function DriftScreen() {
   const router = useRouter();
+  const tier = useAuthStore((s) => s.tier);
   const hour = new Date().getHours();
   const greeting =
     hour < 5
@@ -34,29 +37,49 @@ export default function DriftScreen() {
         ? 'Planning tonight?'
         : 'Your evening starts here';
 
+  const allContent = sampleContent as ContentItem[];
+
   // Group content by type
   const stories = useMemo(
-    () =>
-      (sampleContent as ContentItem[]).filter((c) => c.type === 'story'),
+    () => allContent.filter((c) => c.type === 'story'),
     [],
   );
   const soundscapes = useMemo(
-    () =>
-      (sampleContent as ContentItem[]).filter(
-        (c) => c.type === 'soundscape',
-      ),
+    () => allContent.filter((c) => c.type === 'soundscape'),
     [],
   );
   const meditations = useMemo(
     () =>
-      (sampleContent as ContentItem[]).filter(
+      allContent.filter(
         (c) => c.type === 'meditation' || c.type === 'breathing',
       ),
     [],
   );
 
+  // Build set of locked IDs for the current user's tier
+  const lockedIds = useMemo(() => {
+    if (tier === 'pro') return undefined;
+    const ids = new Set<string>();
+    for (const item of allContent) {
+      if (!canAccess(item.id, tier)) {
+        ids.add(item.id);
+      }
+    }
+    return ids;
+  }, [tier]);
+
   const handleContentPress = useCallback(
     (item: ContentItem) => {
+      // Block locked content
+      if (!canAccess(item.id, tier)) {
+        Alert.alert(
+          'Upgrade to Pro',
+          'Unlock all stories, meditations, breathing exercises, and your full morning report.',
+          [{ text: 'OK' }],
+        );
+        return;
+      }
+
       if (item.type === 'breathing') {
         router.push({
           pathname: '/breathing',
@@ -69,6 +92,7 @@ export default function DriftScreen() {
         router.push({
           pathname: '/player',
           params: {
+            id: item.id,
             title: item.title,
             category: item.category,
             duration: String(item.durationSeconds),
@@ -77,7 +101,7 @@ export default function DriftScreen() {
         });
       }
     },
-    [router],
+    [router, tier],
   );
 
   const handleStartWindDown = useCallback(() => {
@@ -109,18 +133,21 @@ export default function DriftScreen() {
             items={stories}
             onItemPress={handleContentPress}
             cardSize="wide"
+            lockedIds={lockedIds}
           />
 
           <ContentRail
             title="Soundscapes"
             items={soundscapes}
             onItemPress={handleContentPress}
+            lockedIds={lockedIds}
           />
 
           <ContentRail
             title="Meditations"
             items={meditations}
             onItemPress={handleContentPress}
+            lockedIds={lockedIds}
           />
 
           {/* Primary CTA */}

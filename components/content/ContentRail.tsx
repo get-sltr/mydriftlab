@@ -9,6 +9,7 @@ interface ContentRailProps {
   items: ContentItem[];
   onItemPress: (item: ContentItem) => void;
   cardSize?: 'standard' | 'wide';
+  lockedIds?: Set<string>;
 }
 
 export default function ContentRail({
@@ -16,6 +17,7 @@ export default function ContentRail({
   items,
   onItemPress,
   cardSize = 'standard',
+  lockedIds,
 }: ContentRailProps) {
   if (items.length === 0) return null;
 
@@ -27,6 +29,7 @@ export default function ContentRail({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
+        accessibilityLabel={`${title} list`}
       >
         {items.map((item) => (
           <ContentCard
@@ -34,6 +37,7 @@ export default function ContentRail({
             item={item}
             onPress={onItemPress}
             size={cardSize}
+            locked={lockedIds ? lockedIds.has(item.id) : false}
           />
         ))}
       </ScrollView>

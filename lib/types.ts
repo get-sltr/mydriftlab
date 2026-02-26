@@ -39,6 +39,7 @@ export interface ContentItem {
   id: string;
   type: 'story' | 'soundscape' | 'meditation' | 'breathing' | 'music';
   title: string;
+  description?: string;
   narrator?: string;
   durationSeconds: number;
   category: string;

@@ -327,6 +327,23 @@ section { padding: 100px 0; border-top: 1px solid var(--border); }
 }
 .cta-btns { display: flex; gap: 14px; justify-content: center; }
 
+/* WAITLIST FORM */
+.waitlist-form {
+  max-width: 440px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.waitlist-form input {
+  background: var(--navy); border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px 18px; font-family: 'Outfit', sans-serif; font-size: 0.85rem;
+  color: var(--cream); outline: none; transition: border-color 0.3s;
+}
+.waitlist-form input::placeholder { color: var(--cream-dim); }
+.waitlist-form input:focus { border-color: rgba(184,160,210,0.4); }
+.waitlist-form .btn-glass { text-align: center; margin-top: 4px; }
+.waitlist-success {
+  display: none; font-size: 0.9rem; color: var(--lavender); margin-top: 16px;
+}
+
 /* FOOTER */
 footer {
   background: var(--deep); border-top: 1px solid var(--border); padding: 48px 0 32px;
@@ -391,9 +408,9 @@ footer {
   <div class="nav-inner">
     <a href="#" class="nav-logo"><b>Drift</b><i>Lab</i></a>
     <ul class="nav-links">
-      <li><a href="#how">How It Works</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#pricing">Pricing</a></li>
+      <li><a href="/blog">Blog</a></li>
       <li><a href="#cta" class="btn-glass">Join Waitlist</a></li>
     </ul>
   </div>
@@ -408,8 +425,7 @@ footer {
         <h1 class="hero-headline glow">From lullaby to <em>lab report.</em></h1>
         <p class="hero-sub">DriftLab is the only sleep app that helps you fall asleep AND tells you what happened while you were out. Adaptive sounds, sleep stories, guided meditations. Then real-time monitoring of noise, temperature, humidity, and light. No wearable. Just your phone.</p>
         <div class="hero-btns">
-          <a href="#cta" class="btn-glass">Get Early Access</a>
-          <a href="#how" class="btn-glass btn-glass-rose">See How It Works</a>
+          <a href="#cta" class="btn-glass">Join Waitlist</a>
         </div>
       </div>
 
@@ -690,10 +706,17 @@ footer {
 <section class="cta" id="cta">
   <div class="container">
     <h2 class="cta-headline glow reveal">From lullaby to <em>lab report.</em></h2>
-    <p class="cta-sub reveal">The only sleep app that helps you drift off and tells you everything that happened while you were out. Launching soon.</p>
-    <div class="cta-btns reveal">
-      <a href="#" class="btn-glass">Get Early Access</a>
-    </div>
+    <p class="cta-sub reveal">Be the first to try DriftLab. Drop your name and email and we'll let you know when it's ready.</p>
+    <form class="waitlist-form reveal" id="waitlistForm" action="https://formsubmit.co/support@mydriftlab.com" method="POST">
+      <input type="text" name="name" placeholder="Your name" required>
+      <input type="email" name="email" placeholder="Email address" required>
+      <input type="hidden" name="_subject" value="New DriftLab Waitlist Signup">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_next" value="https://mydriftlab.com/thanks">
+      <input type="text" name="_honey" style="display:none">
+      <button type="submit" class="btn-glass">Join Waitlist</button>
+    </form>
+    <div class="waitlist-success reveal" id="waitlistSuccess">You're on the list. We'll be in touch soon.</div>
   </div>
 </section>
 
@@ -715,7 +738,7 @@ footer {
         <div class="footer-col">
           <div class="footer-col-title">Company</div>
           <a href="#">About</a>
-          <a href="#">Blog</a>
+          <a href="/blog">Blog</a>
           <a href="#">Contact</a>
         </div>
         <div class="footer-col">
@@ -756,6 +779,7 @@ const obs = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.12 });
 reveals.forEach(el => obs.observe(el));
+
 </script>
 
 </body>

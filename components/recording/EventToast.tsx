@@ -54,7 +54,7 @@ export default function EventToast({ event, onDismiss }: EventToastProps) {
     : '';
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View style={[styles.container, animatedStyle]} accessibilityLiveRegion="polite" accessibilityLabel={`${typeLabel}, ${severity} severity${event.decibelLevel != null ? `, ${event.decibelLevel} decibels` : ''}`}>
       <View style={styles.card}>
         {/* Category dot */}
         <View style={[styles.dot, { backgroundColor: categoryColor }]} />

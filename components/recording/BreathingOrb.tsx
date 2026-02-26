@@ -55,7 +55,7 @@ export default function BreathingOrb({ currentDb, isRecording }: BreathingOrbPro
   });
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View style={[styles.container, animatedStyle]} accessibilityLabel={`Sound level ${currentDb} decibels`} accessibilityRole="text">
       {/* SVG radial gradient background */}
       <Svg
         width={ORB_SIZE}

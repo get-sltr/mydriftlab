@@ -86,6 +86,9 @@ export default function ProfileScreen() {
             <View style={styles.segmentRow}>
               <Pressable
                 onPress={() => setTempUnitF(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Fahrenheit"
+                accessibilityState={{ selected: tempUnitF }}
                 style={[
                   styles.segment,
                   tempUnitF && styles.segmentActive,
@@ -102,6 +105,9 @@ export default function ProfileScreen() {
               </Pressable>
               <Pressable
                 onPress={() => setTempUnitF(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Celsius"
+                accessibilityState={{ selected: !tempUnitF }}
                 style={[
                   styles.segment,
                   !tempUnitF && styles.segmentActive,
@@ -133,6 +139,7 @@ export default function ProfileScreen() {
             <Switch
               value={partnerDefault}
               onValueChange={setPartnerDefault}
+              accessibilityLabel="Partner in bed"
               trackColor={{
                 false: 'rgba(240,235,224,0.1)',
                 true: 'rgba(184,160,210,0.4)',
@@ -153,6 +160,9 @@ export default function ProfileScreen() {
               <Pressable
                 key={level}
                 onPress={() => setSensitivity(level)}
+                accessibilityRole="button"
+                accessibilityLabel={`${level.charAt(0).toUpperCase() + level.slice(1)} sensitivity`}
+                accessibilityState={{ selected: sensitivity === level }}
                 style={[
                   styles.sensitivityOption,
                   sensitivity === level && styles.sensitivityActive,
@@ -199,7 +209,7 @@ function PreferenceRow({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.timeCard}>
+    <Pressable onPress={onPress} style={styles.timeCard} accessibilityRole="button" accessibilityLabel={`${label}, ${value}`} accessibilityHint="Double tap to change">
       <Text style={styles.timeLabel}>{label}</Text>
       <Text style={styles.timeValue}>{value}</Text>
     </Pressable>

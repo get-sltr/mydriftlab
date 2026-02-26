@@ -41,13 +41,15 @@ export default function GlassInput({
           style={[styles.input, style]}
           placeholderTextColor={colors.creamDim}
           selectionColor={colors.lavender}
+          accessibilityLabel={label}
+          accessibilityHint={error ? error : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           {...props}
         />
         {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     </View>
   );
 }

@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
 import { useAuthStore } from '../../stores/authStore';
+import { canAccessFeature } from '../../lib/freeTier';
 import { getSessions } from '../../services/aws/sessions';
 import { getSessionEvents } from '../../services/aws/events';
 import { calculateRestScore } from '../../services/analysis/scoring';
@@ -16,6 +18,41 @@ import ScoreRing from '../../components/report/ScoreRing';
 
 export default function ReportScreen() {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const tier = useAuthStore((s) => s.tier);
+
+  // Gate for free users
+  if (!canAccessFeature('morningReport', tier)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.header}>Morning Report</Text>
+
+          <View style={styles.lockedContainer}>
+            <View style={styles.lockedIconWrap}>
+              <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zm-2 0V7a5 5 0 00-10 0v4"
+                  stroke={colors.lavender}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
+            <Text style={styles.lockedTitle}>Pro Feature</Text>
+            <Text style={styles.lockedBody}>
+              Upgrade to Pro to unlock your full morning report with rest scores,
+              environment breakdowns, and personalized insights.
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
   const [session, setSession] = useState<SleepSession | null>(null);
   const [events, setEvents] = useState<EnvironmentEvent[]>([]);
   const [score, setScore] = useState(0);
@@ -342,5 +379,35 @@ const styles = StyleSheet.create({
   emptyScoreLabel: {
     ...textStyles.caption,
     color: colors.creamMuted,
+  },
+
+  // Locked / Pro gate
+  lockedContainer: {
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 32,
+  },
+  lockedIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(184,160,210,0.1)',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  lockedTitle: {
+    fontFamily: fonts.headline.medium,
+    fontSize: 22,
+    color: colors.cream,
+    marginBottom: 12,
+  },
+  lockedBody: {
+    ...textStyles.body,
+    color: colors.creamMuted,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

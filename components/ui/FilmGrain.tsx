@@ -7,7 +7,7 @@ import Svg, { Defs, Filter, FeTurbulence, Rect } from 'react-native-svg';
  */
 export default function FilmGrain() {
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={styles.container} pointerEvents="none" accessible={false} importantForAccessibility="no">
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
         <Defs>
           <Filter id="grain">

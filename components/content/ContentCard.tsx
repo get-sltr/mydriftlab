@@ -1,6 +1,7 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ContentItem, VisualEnvironment } from '../../lib/types';
+import Svg, { Path } from 'react-native-svg';
+import { ContentItem } from '../../lib/types';
 import { colors } from '../../lib/colors';
 import { fonts } from '../../lib/typography';
 
@@ -8,6 +9,7 @@ interface ContentCardProps {
   item: ContentItem;
   onPress: (item: ContentItem) => void;
   size?: 'standard' | 'wide';
+  locked?: boolean;
 }
 
 /** Map content category to a subtle background tint */
@@ -62,6 +64,7 @@ export default function ContentCard({
   item,
   onPress,
   size = 'standard',
+  locked = false,
 }: ContentCardProps) {
   const tint = getCategoryTint(item.category);
   const isWide = size === 'wide';
@@ -69,10 +72,14 @@ export default function ContentCard({
   return (
     <Pressable
       onPress={() => onPress(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${getCategoryLabel(item.category)}, ${formatDuration(item.durationSeconds)}${locked ? ', Pro required' : ''}`}
+      accessibilityHint={locked ? 'Double tap to upgrade' : 'Double tap to play'}
       style={({ pressed }) => [
         styles.card,
         isWide ? styles.cardWide : styles.cardStandard,
         pressed && styles.pressed,
+        locked && styles.cardLocked,
       ]}
     >
       <LinearGradient
@@ -86,25 +93,39 @@ export default function ContentCard({
       <View style={styles.borderGlow} />
 
       <View style={styles.content}>
-        {/* Category tag */}
+        {/* Category tag + lock/pro badge */}
         <View style={styles.tagRow}>
           <View style={styles.tag}>
             <Text style={styles.tagText}>
               {getCategoryLabel(item.category)}
             </Text>
           </View>
-          {item.tier === 'pro' && (
-            <View style={styles.proBadge}>
-              <Text style={styles.proText}>PRO</Text>
+          {locked && (
+            <View style={styles.lockBadge}>
+              <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zm-2 0V7a5 5 0 00-10 0v4"
+                  stroke={colors.lavender}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={styles.lockText}>PRO</Text>
             </View>
           )}
         </View>
 
-        {/* Title + duration at bottom */}
+        {/* Title + description + duration at bottom */}
         <View style={styles.bottom}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, locked && styles.textLocked]} numberOfLines={2}>
             {item.title}
           </Text>
+          {item.description ? (
+            <Text style={[styles.description, locked && styles.textLocked]} numberOfLines={1}>
+              {item.description}
+            </Text>
+          ) : null}
           <Text style={styles.duration}>
             {formatDuration(item.durationSeconds)}
           </Text>
@@ -129,6 +150,9 @@ const styles = StyleSheet.create({
   cardWide: {
     width: 200,
     height: 140,
+  },
+  cardLocked: {
+    opacity: 0.55,
   },
   pressed: {
     opacity: 0.8,
@@ -167,19 +191,32 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  proBadge: {
+  lockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(184,160,210,0.2)',
     borderRadius: 4,
     paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingVertical: 2,
+    gap: 3,
   },
-  proText: {
+  lockText: {
     fontFamily: fonts.mono.medium,
     fontSize: 8,
     color: colors.lavender,
     letterSpacing: 1,
   },
   bottom: {},
+  description: {
+    fontFamily: fonts.body.regular,
+    fontSize: 10,
+    color: colors.creamDim,
+    lineHeight: 13,
+    marginBottom: 2,
+  },
+  textLocked: {
+    color: colors.creamDim,
+  },
   title: {
     fontFamily: fonts.body.medium,
     fontSize: 14,

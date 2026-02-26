@@ -121,7 +121,7 @@ export default function FloatingParticles({
   );
 
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={styles.container} pointerEvents="none" accessible={false} importantForAccessibility="no">
       {particles.map((p) => (
         <Particle key={p.id} config={p} />
       ))}

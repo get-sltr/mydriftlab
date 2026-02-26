@@ -14,7 +14,7 @@ export default function GlowText({
   variant = 'h1',
 }: GlowTextProps) {
   return (
-    <Text style={[styles.base, styles[variant], style]}>{children}</Text>
+    <Text style={[styles.base, styles[variant], style]} accessibilityRole="header">{children}</Text>
   );
 }
 

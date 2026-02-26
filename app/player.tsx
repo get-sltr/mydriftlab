@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,23 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  Easing,
-  runOnJS,
 } from 'react-native-reanimated';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import EnvironmentRenderer, {
   categoryToEnvironment,
 } from '../components/environments/EnvironmentRenderer';
 import FilmGrain from '../components/ui/FilmGrain';
-import { VisualEnvironment } from '../lib/types';
+import { ContentPlayer } from '../services/audio/player';
+import { audioAssets } from '../lib/audioAssets';
 import { colors } from '../lib/colors';
 import { fonts } from '../lib/typography';
 
 const { width: W } = Dimensions.get('window');
-const PROGRESS_BAR_WIDTH = W - 80;
 
 export default function PlayerScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
+    id: string;
     title: string;
     category: string;
     duration: string;
@@ -38,11 +37,14 @@ export default function PlayerScreen() {
 
   const title = params.title ?? 'Untitled';
   const category = params.category ?? 'default';
-  const totalDuration = parseInt(params.duration ?? '0', 10);
+  const contentId = params.id ?? '';
+  const totalDurationParam = parseInt(params.duration ?? '0', 10);
   const environment = categoryToEnvironment(category);
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const playerRef = useRef<ContentPlayer | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(totalDurationParam);
   const [controlsVisible, setControlsVisible] = useState(true);
 
   // Auto-hide controls after 5s
@@ -57,48 +59,84 @@ export default function PlayerScreen() {
     }
   }, [controlsVisible]);
 
-  // Simulate playback progress
+  // Initialize and load audio on mount
   useEffect(() => {
-    if (!isPlaying || totalDuration === 0) return;
-    const interval = setInterval(() => {
-      setElapsed((prev) => {
-        if (prev >= totalDuration) {
-          setIsPlaying(false);
-          return prev;
+    const player = new ContentPlayer();
+    playerRef.current = player;
+
+    const setup = async () => {
+      await player.init();
+
+      player.onStatus((status) => {
+        setElapsed(Math.floor(status.positionMillis / 1000));
+        if (status.durationMillis > 0) {
+          setTotalDuration(Math.floor(status.durationMillis / 1000));
         }
-        return prev + 1;
+        setIsPlaying(status.isPlaying);
+
+        if (status.didJustFinish) {
+          setIsPlaying(false);
+        }
       });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isPlaying, totalDuration]);
+
+      // Load from bundled asset if available, otherwise no-op
+      const asset = audioAssets[contentId];
+      if (asset) {
+        await player.load(asset);
+        await player.play();
+        setIsPlaying(true);
+      }
+    };
+
+    setup();
+
+    return () => {
+      playerRef.current?.unload();
+      playerRef.current = null;
+    };
+  }, [contentId]);
 
   const handleTapScreen = useCallback(() => {
+    playerRef.current?.onUserInteraction();
     controlsOpacity.value = withTiming(1, { duration: 300 });
     setControlsVisible(true);
   }, []);
 
-  const handleBack = useCallback(() => {
+  const handleBack = useCallback(async () => {
+    await playerRef.current?.stop();
     router.back();
   }, [router]);
 
-  const togglePlayPause = useCallback(() => {
-    setIsPlaying((p) => !p);
+  const togglePlayPause = useCallback(async () => {
+    const player = playerRef.current;
+    if (!player) return;
+
+    await player.onUserInteraction();
+
+    if (isPlaying) {
+      await player.pause();
+    } else {
+      await player.resume();
+    }
+
     controlsOpacity.value = withTiming(1, { duration: 200 });
     setControlsVisible(true);
-  }, []);
+  }, [isPlaying]);
 
-  const skipBack = useCallback(() => {
-    setElapsed((prev) => Math.max(0, prev - 15));
-  }, []);
+  const skipBack = useCallback(async () => {
+    await playerRef.current?.onUserInteraction();
+    const newPos = Math.max(0, elapsed - 15) * 1000;
+    await playerRef.current?.seekTo(newPos);
+  }, [elapsed]);
 
-  const skipForward = useCallback(() => {
-    setElapsed((prev) =>
-      totalDuration > 0 ? Math.min(totalDuration, prev + 15) : prev + 15,
-    );
-  }, [totalDuration]);
+  const skipForward = useCallback(async () => {
+    await playerRef.current?.onUserInteraction();
+    const maxPos = totalDuration > 0 ? totalDuration : elapsed + 15;
+    const newPos = Math.min(maxPos, elapsed + 15) * 1000;
+    await playerRef.current?.seekTo(newPos);
+  }, [elapsed, totalDuration]);
 
-  const progress =
-    totalDuration > 0 ? elapsed / totalDuration : 0;
+  const progress = totalDuration > 0 ? elapsed / totalDuration : 0;
 
   const controlsStyle = useAnimatedStyle(() => ({
     opacity: controlsOpacity.value,
