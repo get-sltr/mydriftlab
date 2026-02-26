@@ -25,7 +25,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "9",
+      "buildNumber": "12",
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": [
@@ -64,12 +64,14 @@
         }
       ],
       "expo-brightness",
-      "react-native-iap",
       "@react-native-community/datetimepicker",
-      ["@kingstinct/react-native-healthkit", {
-        "NSHealthShareUsageDescription": "MyDriftLab reads sleep stages, heart rate variability, and respiratory data from Apple Health to enrich your sleep insights.",
-        "NSHealthUpdateUsageDescription": "MyDriftLab writes your sleep sessions and breathing data to Apple Health so all your health data stays in one place."
-      }]
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "MyDriftLab reads sleep stages, heart rate variability, and respiratory data from Apple Health to enrich your sleep insights.",
+          "NSHealthUpdateUsageDescription": "MyDriftLab writes your sleep sessions and breathing data to Apple Health so all your health data stays in one place."
+        }
+      ]
     ],
     "extra": {
       "router": {},

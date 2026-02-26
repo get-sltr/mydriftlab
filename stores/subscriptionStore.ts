@@ -1,29 +1,18 @@
 /**
- * Subscription store — direct StoreKit integration via react-native-iap.
- * Manages purchase state and syncs tier with authStore.
+ * Subscription store — stubbed out until react-native-iap
+ * is compatible with our Expo SDK / RN version.
+ *
+ * TODO: Re-add react-native-iap when Expo SDK supports RN 0.79+
+ * (required for NitroModules-based IAP v14+).
  */
 
 import { create } from 'zustand';
-import {
-  initConnection,
-  endConnection,
-  getSubscriptions,
-  requestSubscription,
-  getAvailablePurchases,
-  finishTransaction,
-  purchaseUpdatedListener,
-  purchaseErrorListener,
-  type Subscription,
-  type Purchase,
-} from 'react-native-iap';
 import { useAuthStore } from './authStore';
-
-const PRODUCT_ID = 'pro_monthly';
 
 interface SubscriptionState {
   isReady: boolean;
   isLoading: boolean;
-  product: Subscription | null;
+  product: null;
   error: string | null;
 
   init: () => Promise<void>;
@@ -32,100 +21,24 @@ interface SubscriptionState {
   teardown: () => void;
 }
 
-let purchaseUpdateSub: { remove(): void } | null = null;
-let purchaseErrorSub: { remove(): void } | null = null;
-
-function syncTier(isPro: boolean) {
-  useAuthStore.getState().setTier(isPro ? 'pro' : 'free');
-}
-
-export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
+export const useSubscriptionStore = create<SubscriptionState>((set) => ({
   isReady: false,
   isLoading: false,
   product: null,
   error: null,
 
   init: async () => {
-    try {
-      await initConnection();
-
-      // Listen for successful purchases
-      purchaseUpdateSub = purchaseUpdatedListener(
-        async (purchase: Purchase) => {
-          await finishTransaction({ purchase, isConsumable: false });
-          syncTier(true);
-          set({ isLoading: false, error: null });
-        },
-      );
-
-      // Listen for purchase errors
-      purchaseErrorSub = purchaseErrorListener((error) => {
-        if (error.code !== 'E_USER_CANCELLED') {
-          set({ error: error.message, isLoading: false });
-        } else {
-          set({ isLoading: false });
-        }
-      });
-
-      // Fetch subscription product info
-      const subscriptions = await getSubscriptions({ skus: [PRODUCT_ID] });
-      const product = subscriptions?.find((p) => p.productId === PRODUCT_ID) ?? null;
-
-      // Check for existing active subscription
-      const purchases = await getAvailablePurchases();
-      const hasActive = purchases.some((p: Purchase) => p.productId === PRODUCT_ID);
-      if (hasActive) {
-        syncTier(true);
-      }
-
-      set({ isReady: true, product });
-    } catch {
-      // In simulator / dev builds without StoreKit config, silently degrade
-      set({ isReady: true, error: null });
-    }
+    // Stub: mark as ready with no product available
+    set({ isReady: true });
   },
 
   purchase: async () => {
-    const { product } = get();
-    if (!product) {
-      set({ error: 'Product not available' });
-      return;
-    }
-
-    try {
-      set({ isLoading: true, error: null });
-      await requestSubscription({ sku: PRODUCT_ID });
-      // Completion handled by purchaseUpdatedListener
-    } catch (err: any) {
-      if (err.code !== 'E_USER_CANCELLED') {
-        set({ error: err.message ?? 'Purchase failed', isLoading: false });
-      } else {
-        set({ isLoading: false });
-      }
-    }
+    set({ error: 'In-app purchases are not yet available.' });
   },
 
   restore: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      const purchases = await getAvailablePurchases();
-      const hasActive = purchases.some((p: Purchase) => p.productId === PRODUCT_ID);
-
-      syncTier(hasActive);
-      set({
-        isLoading: false,
-        error: hasActive ? null : 'No active subscription found',
-      });
-    } catch (err: any) {
-      set({ error: err.message ?? 'Restore failed', isLoading: false });
-    }
+    set({ error: 'In-app purchases are not yet available.' });
   },
 
-  teardown: () => {
-    purchaseUpdateSub?.remove();
-    purchaseErrorSub?.remove();
-    purchaseUpdateSub = null;
-    purchaseErrorSub = null;
-    endConnection();
-  },
+  teardown: () => {},
 }));
