@@ -11,7 +11,6 @@ import ContentRail from '../../components/content/ContentRail';
 import { ContentItem } from '../../lib/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCBTIStore } from '../../stores/cbtiStore';
-import { getAvailableLessons, getLessonsForWeek } from '../../data/cbtiContent';
 import { cbtiLessons } from '../../data/cbtiContent';
 import { canAccess } from '../../lib/freeTier';
 import { colors } from '../../lib/colors';

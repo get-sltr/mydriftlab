@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import GradientBorderCard from '../ui/GradientBorderCard';
 import { colors } from '../../lib/colors';
 import { fonts } from '../../lib/typography';

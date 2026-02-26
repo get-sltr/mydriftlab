@@ -20,7 +20,7 @@
  */
 
 import { Audio } from 'expo-av';
-import { bandpassFilter, zeroMeanNormalize } from './dsp';
+import { zeroMeanNormalize } from './dsp';
 import type {
   SonarState,
   MovementLevel,
@@ -31,8 +31,6 @@ import type {
 
 // ── Configuration ────────────────────────────────────────────
 
-const SONAR_FREQ_HZ = 18500;
-const SONAR_BANDWIDTH_HZ = 500;
 const METERING_RATE_HZ = 10;
 const ANALYSIS_INTERVAL_MS = 5000; // classify every 5s
 const STILL_THRESHOLD_MINUTES = 5;
@@ -200,15 +198,9 @@ export class SonarTracker {
     const raw = this.meteringBuffer.slice(-100); // last 10s
     const centered = zeroMeanNormalize(raw);
 
-    // In a real implementation, we'd bandpass filter around 18.5kHz on
-    // the raw PCM data. With metering dB levels, we estimate movement
-    // from amplitude variance and signal dynamics.
-    const filtered = bandpassFilter(
-      centered,
-      SONAR_FREQ_HZ,
-      SONAR_BANDWIDTH_HZ,
-      METERING_RATE_HZ * 1000, // approximate
-    );
+    // With metering dB levels, we estimate movement from amplitude
+    // variance and signal dynamics. True sonar (18.5kHz bandpass on raw
+    // PCM) will be added when raw audio access is available.
 
     // Calculate amplitude metrics
     const rms = Math.sqrt(

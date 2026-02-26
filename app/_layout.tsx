@@ -30,6 +30,8 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
+import { useCBTIStore } from '../stores/cbtiStore';
+import { useExperimentStore } from '../stores/experimentStore';
 import { ClipKeeper } from '../services/audio/clipKeeper';
 import {
   configureNotifications,
@@ -42,6 +44,8 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const initPreferences = usePreferencesStore((s) => s.initialize);
+  const initCBTI = useCBTIStore((s) => s.initialize);
+  const initExperiments = useExperimentStore((s) => s.initialize);
 
   const [fontsLoaded] = useFonts({
     CormorantGaramond_300Light,
@@ -65,8 +69,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      // Initialize auth + preferences, then hide splash
-      Promise.all([initialize(), initPreferences()]).finally(() => {
+      // Initialize all stores, then hide splash
+      Promise.all([initialize(), initPreferences(), initCBTI(), initExperiments()]).finally(() => {
         SplashScreen.hideAsync();
       });
 
@@ -117,6 +121,20 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="upgrade"
+          options={{
+            animation: 'slide_from_bottom',
+            presentation: 'modal',
+          }}
+        />
+        <Stack.Screen
+          name="bdi-info"
+          options={{
+            animation: 'slide_from_bottom',
+            presentation: 'modal',
+          }}
+        />
+        <Stack.Screen
+          name="cbti-info"
           options={{
             animation: 'slide_from_bottom',
             presentation: 'modal',

@@ -64,9 +64,9 @@ export async function scheduleClipExpiryReminder(
   if (clipCount <= 0) return null;
 
   try {
-    // Calculate when to fire: 10 days after session date, at 9 AM local
+    // Fire 1 day before expiry (day 9) at 9 AM so "expiring tomorrow" is accurate
     const date = new Date(sessionDate.split('T')[0]);
-    date.setDate(date.getDate() + CLIP_EXPIRY_DAYS);
+    date.setDate(date.getDate() + CLIP_EXPIRY_DAYS - 1);
     date.setHours(9, 0, 0, 0);
 
     // Don't schedule if the reminder date is in the past

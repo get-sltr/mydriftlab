@@ -15,7 +15,6 @@ import { getSessionEvents } from '../../services/aws/events';
 import { calculateRestScore } from '../../services/analysis/scoring';
 import { writeNightSummary } from '../../services/analysis/summaryWriter';
 import { generateInsights } from '../../services/analysis/insights';
-import { getBdiSeverity } from '../../services/analysis/breathTrend';
 import { eventCategories } from '../../lib/eventCategories';
 import { ClipKeeper, type ClipManifest, type SegmentMeta } from '../../services/audio/clipKeeper';
 import { shareReport, type ReportData } from '../../services/report/pdfGenerator';
@@ -30,45 +29,7 @@ export default function ReportScreen() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const tier = useAuthStore((s) => s.tier);
 
-  // Gate for free users
-  if (!canAccessFeature('morningReport', tier)) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.header}>Morning Report</Text>
-
-          <View style={styles.lockedContainer}>
-            <View style={styles.lockedIconWrap}>
-              <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zm-2 0V7a5 5 0 00-10 0v4"
-                  stroke={colors.lavender}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </View>
-            <Text style={styles.lockedTitle}>Pro Feature</Text>
-            <Text style={styles.lockedBody}>
-              Upgrade to Pro to unlock your full morning report with rest scores,
-              environment breakdowns, and personalized insights.
-            </Text>
-            <GlassButton
-              title="Upgrade to Pro"
-              onPress={() => router.push('/upgrade')}
-              size="large"
-              style={styles.upgradeButton}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+  // All hooks must be declared before any conditional returns (Rules of Hooks)
   const [session, setSession] = useState<SleepSession | null>(null);
   const [events, setEvents] = useState<EnvironmentEvent[]>([]);
   const [score, setScore] = useState(0);
@@ -225,6 +186,46 @@ export default function ReportScreen() {
     if (!clips) return null;
     return clips.segments.find((s) => s.eventIds.includes(eventId)) ?? null;
   }, [clips]);
+
+  // Gate for free users (after all hooks to satisfy Rules of Hooks)
+  if (!canAccessFeature('morningReport', tier)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.header}>Morning Report</Text>
+
+          <View style={styles.lockedContainer}>
+            <View style={styles.lockedIconWrap}>
+              <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zm-2 0V7a5 5 0 00-10 0v4"
+                  stroke={colors.lavender}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
+            <Text style={styles.lockedTitle}>Pro Feature</Text>
+            <Text style={styles.lockedBody}>
+              Upgrade to Pro to unlock your full morning report with rest scores,
+              environment breakdowns, and personalized insights.
+            </Text>
+            <GlassButton
+              title="Upgrade to Pro"
+              onPress={() => router.push('/upgrade')}
+              size="large"
+              style={styles.upgradeButton}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (

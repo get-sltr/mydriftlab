@@ -70,6 +70,12 @@ export class BreathTrendAnalyzer {
     }
   }
 
+  /** Get the most recent breathing rate (BPM) from the latest snapshot. */
+  getLatestBreathingRate(): number {
+    if (this.snapshots.length === 0) return 0;
+    return this.snapshots[this.snapshots.length - 1].breathingRate;
+  }
+
   /** Finalize and return the full-night summary. */
   finalize(): BreathTrendSummary {
     // Analyze any remaining data if we have at least 50% of a window

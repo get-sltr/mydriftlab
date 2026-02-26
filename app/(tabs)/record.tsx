@@ -63,7 +63,7 @@ export default function RecordScreen() {
   } = useRecordingStore();
 
   const { userId, accessToken } = useAuthStore();
-  const { sensitivity, thermostatF, tempUnitF, recordingConsent } = usePreferencesStore();
+  const { sensitivity, thermostatF, tempUnitF, recordingConsent, sonarEnabled, appleHealthEnabled } = usePreferencesStore();
 
   const isRecording = status === 'recording';
   const isLoading = status === 'starting' || status === 'stopping';
@@ -155,7 +155,7 @@ export default function RecordScreen() {
         return;
       }
       recordUserInteraction();
-      await startSession(userId, accessToken, sensitivity, thermostatF);
+      await startSession(userId, accessToken, sensitivity, thermostatF, sonarEnabled, appleHealthEnabled);
     }
   }, [userId, accessToken, isRecording, startSession, stopSession, recordUserInteraction, recordingConsent, router]);
 

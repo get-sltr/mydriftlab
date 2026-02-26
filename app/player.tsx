@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,8 +25,6 @@ import { usePreferencesStore } from '../stores/preferencesStore';
 import { audioAssets } from '../lib/audioAssets';
 import { colors } from '../lib/colors';
 import { fonts } from '../lib/typography';
-
-const { width: W } = Dimensions.get('window');
 
 type ScreenMode = 'playing' | 'monitoring';
 
@@ -54,6 +51,8 @@ export default function PlayerScreen() {
   const thermostatF = usePreferencesStore((s) => s.thermostatF);
   const monitoringTheme = usePreferencesStore((s) => s.monitoringTheme);
   const recordingConsent = usePreferencesStore((s) => s.recordingConsent);
+  const sonarEnabled = usePreferencesStore((s) => s.sonarEnabled);
+  const appleHealthEnabled = usePreferencesStore((s) => s.appleHealthEnabled);
 
   // Recording store
   const startSession = useRecordingStore((s) => s.startSession);
@@ -142,7 +141,7 @@ export default function PlayerScreen() {
 
     // Start recording session
     if (userId && accessToken) {
-      await startSession(userId, accessToken, sensitivity, thermostatF);
+      await startSession(userId, accessToken, sensitivity, thermostatF, sonarEnabled, appleHealthEnabled);
     }
   }, [userId, accessToken, sensitivity, thermostatF, startSession, recordingConsent, router]);
 
@@ -328,18 +327,16 @@ export default function PlayerScreen() {
             <View style={styles.playbackRow}>
               {/* Skip back 15s */}
               <Pressable onPress={skipBack} style={styles.skipButton}>
-                <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
-                    fill={colors.cream}
-                    opacity={0.7}
-                  />
-                  <Text
-                    style={styles.skipLabel}
-                  >
-                    15
-                  </Text>
-                </Svg>
+                <View style={styles.skipIconWrap}>
+                  <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
+                      fill={colors.cream}
+                      opacity={0.7}
+                    />
+                  </Svg>
+                  <Text style={styles.skipLabel}>15</Text>
+                </View>
               </Pressable>
 
               {/* Play/Pause */}
@@ -480,6 +477,12 @@ const styles = StyleSheet.create({
   skipButton: {
     width: 44,
     height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skipIconWrap: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

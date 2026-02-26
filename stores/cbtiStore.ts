@@ -1,10 +1,13 @@
 /**
- * CBT-I Store — Zustand + SecureStore
+ * CBT-I Store — Zustand + file-based persistence
  * Manages the 6-week Insomnia Fighter program state and sleep diary.
+ *
+ * Uses expo-file-system instead of SecureStore because diary entries
+ * can grow well beyond SecureStore's ~2KB value limit.
  */
 
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { Paths, File } from 'expo-file-system';
 import type { CBTIProgram, SleepDiaryEntry } from '../lib/types';
 import {
   createProgram,
@@ -15,7 +18,11 @@ import {
   getWeeklyProgress as getProgress,
 } from '../services/cbti/programEngine';
 
-const STORE_KEY = 'driftlab_cbti_program';
+const STORE_FILENAME = 'cbti_program.json';
+
+function getStoreFile(): File {
+  return new File(Paths.document, STORE_FILENAME);
+}
 
 interface CBTIState {
   program: CBTIProgram | null;
@@ -50,13 +57,14 @@ export const useCBTIStore = create<CBTIState>((set, get) => ({
   initialize: async () => {
     set({ isLoading: true });
     try {
-      const stored = await SecureStore.getItemAsync(STORE_KEY);
-      if (stored) {
-        const program = JSON.parse(stored) as CBTIProgram;
+      const file = getStoreFile();
+      if (file.exists) {
+        const raw = await file.text();
+        const program = JSON.parse(raw) as CBTIProgram;
         set({ program });
       }
     } catch {
-      // No stored program
+      // No stored program or corrupt data
     } finally {
       set({ isLoading: false });
     }
@@ -179,7 +187,9 @@ export const useCBTIStore = create<CBTIState>((set, get) => ({
 
 async function persistProgram(program: CBTIProgram): Promise<void> {
   try {
-    await SecureStore.setItemAsync(STORE_KEY, JSON.stringify(program));
+    const file = getStoreFile();
+    file.create({ intermediates: true, overwrite: true });
+    file.write(JSON.stringify(program));
   } catch {
     // Storage failure — non-critical
   }

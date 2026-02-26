@@ -175,6 +175,14 @@ export const useRecordingStore = create<RecordingState>((set, get) => ({
           handleEvent(event, token);
         }
 
+        // Feed breathing rate from BreathTrend into Sonar for richer state
+        if (sonarTracker && breathTrendAnalyzer) {
+          const latestRate = breathTrendAnalyzer.getLatestBreathingRate?.();
+          if (latestRate && latestRate > 0) {
+            sonarTracker.setBreathingRate(latestRate);
+          }
+        }
+
         // Check smart fade
         if (smartFadeState) {
           const shouldFade = checkSmartFade(smartFadeState, recorder.getCurrentDb(), baseline);

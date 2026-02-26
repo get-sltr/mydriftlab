@@ -1,10 +1,13 @@
 /**
- * Experiment Store — Zustand + SecureStore
- * Manages remedy experiment lifecycle: pick → baseline → log → compare.
+ * Experiment Store — Zustand + file-based persistence
+ * Manages remedy experiment lifecycle: pick -> baseline -> log -> compare.
+ *
+ * Uses expo-file-system instead of SecureStore because experiment logs
+ * can grow well beyond SecureStore's ~2KB value limit.
  */
 
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { Paths, File } from 'expo-file-system';
 import type {
   Experiment,
   Remedy,
@@ -13,7 +16,11 @@ import type {
   ExperimentAdherence,
 } from '../lib/types';
 
-const STORE_KEY = 'driftlab_experiments';
+const STORE_FILENAME = 'experiments.json';
+
+function getStoreFile(): File {
+  return new File(Paths.document, STORE_FILENAME);
+}
 
 interface StoredExperiments {
   active: ExperimentWithLogs | null;
@@ -61,16 +68,17 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   initialize: async () => {
     set({ isLoading: true });
     try {
-      const stored = await SecureStore.getItemAsync(STORE_KEY);
-      if (stored) {
-        const data = JSON.parse(stored) as StoredExperiments;
+      const file = getStoreFile();
+      if (file.exists) {
+        const raw = await file.text();
+        const data = JSON.parse(raw) as StoredExperiments;
         set({
           activeExperiment: data.active,
           pastExperiments: data.past ?? [],
         });
       }
     } catch {
-      // No stored data
+      // No stored data or corrupt data
     } finally {
       set({ isLoading: false });
     }
@@ -131,7 +139,9 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
     const updated: ExperimentWithLogs = {
       ...activeExperiment,
       logs: [...activeExperiment.logs, log],
-      completedNights: activeExperiment.completedNights + 1,
+      // Only count non-skipped days toward completion
+      completedNights:
+        activeExperiment.completedNights + (adherence !== 'skipped' ? 1 : 0),
     };
 
     // Update current value from latest score
@@ -259,7 +269,9 @@ async function persist(state: ExperimentState): Promise<void> {
       active: state.activeExperiment,
       past: state.pastExperiments,
     };
-    await SecureStore.setItemAsync(STORE_KEY, JSON.stringify(data));
+    const file = getStoreFile();
+    file.create({ intermediates: true, overwrite: true });
+    file.write(JSON.stringify(data));
   } catch {
     // Storage failure
   }
@@ -270,10 +282,10 @@ function buildResultSummary(name: string, results: ExperimentResults): string {
     results;
 
   if (verdict === 'improved') {
-    return `${name} improved your rest score by ${improvementPct}% (${baselineAvgScore} → ${experimentAvgScore}).`;
+    return `${name} improved your rest score by ${improvementPct}% (${baselineAvgScore} -> ${experimentAvgScore}).`;
   }
   if (verdict === 'worsened') {
-    return `${name} didn't help — your rest score decreased by ${Math.abs(improvementPct)}% (${baselineAvgScore} → ${experimentAvgScore}).`;
+    return `${name} didn't help — your rest score decreased by ${Math.abs(improvementPct)}% (${baselineAvgScore} -> ${experimentAvgScore}).`;
   }
-  return `${name} showed no significant change (${baselineAvgScore} → ${experimentAvgScore}).`;
+  return `${name} showed no significant change (${baselineAvgScore} -> ${experimentAvgScore}).`;
 }
